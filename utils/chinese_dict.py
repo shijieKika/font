@@ -27,11 +27,11 @@ class ChineseDict:
             return None
 
 def main():
-    dict_dir = "../chinese.dict"
+    dict_dir = "chinese.dict"
     d = ChineseDict()
     d.load(dict_dir)
-    print(d.getWord(8876))
-    print(d.getIndex('一'))
+    print(d.getWord(6738))
+    print(d.getIndex('\xe8\xb2\xac'))
 
 if __name__ == '__main__':
     main()
