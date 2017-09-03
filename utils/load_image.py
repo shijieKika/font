@@ -12,6 +12,9 @@ from PIL import Image
 re_file_name = re.compile(r"uni.+png")
 re_chinese = re.compile(r"uni.*_(.*)\.png")
 
+lr = np.repeat(255, 64 * 4).reshape(64, 4)
+ud = np.repeat(255, 4 * 72).reshape(4, 72)
+
 def convert_raw_to_array(file_path):
     raw_photo = array(Image.open(file_path))
     x, y = raw_photo.shape
@@ -28,8 +31,14 @@ def convert_raw_to_array(file_path):
     else:
         full_photo = raw_photo
 
-    im = Image.fromarray(uint8(full_photo)).resize((100, 100))
-    return array(im)
+    result = array(Image.fromarray(uint8(full_photo)).resize((64, 64)))
+
+    result = np.concatenate((lr, result), axis=1)
+    result = np.concatenate((result, lr), axis=1)
+    result = np.concatenate((ud, result), axis=0)
+    result = np.concatenate((result, ud), axis=0)
+
+    return result
 
 def load_image(src_path, chinese_path = "chinese.dict"):
     chinese = chinese_dict.ChineseDict()
@@ -49,14 +58,15 @@ def load_image(src_path, chinese_path = "chinese.dict"):
     return font_list,label_list
 
 def main():
-    # ret = convert_raw_to_array("../../training_data/positive_data/AaBuYu", "uni8CAC_責.png")
-    # plt.imshow(ret)
-    # plt.show()
+    # image_path = "/Users/msj/Code/font/training_data/positive_data/AaBuYu/uni5DA0_嶠.png"
+    # im = convert_raw_to_array(image_path)
+    # Image.fromarray(uint8(im)).show()
 
     # a, b = load_image("/Users/msj/Code/font/test_data")
     # for i, j in zip(b, a):
     #     print(i, j.shape)
     # print(len(b))
+    pass
 
 if __name__ == '__main__':
     main()
