@@ -5,7 +5,6 @@ import os
 import re
 import chinese_dict
 
-from pylab import *
 from PIL import Image
 
 re_file_name = re.compile(r"uni.+png")
@@ -15,7 +14,7 @@ lr = np.repeat(255, 60 * 2).reshape(60, 2)
 ud = np.repeat(255, 2 * 64).reshape(2, 64)
 
 def convert_raw_to_array(file_path, bin_pro=False):
-    raw_photo = array(Image.open(file_path))
+    raw_photo = np.array(Image.open(file_path))
     x, y = raw_photo.shape
     if x < y:
         head_count = (y - x) / 2
@@ -30,7 +29,7 @@ def convert_raw_to_array(file_path, bin_pro=False):
     else:
         full_photo = raw_photo
 
-    result = array(Image.fromarray(uint8(full_photo)).resize((60, 60)))
+    result = np.array(Image.fromarray(np.uint8(full_photo)).resize((60, 60)))
 
     result = np.concatenate((lr, result), axis=1)
     result = np.concatenate((result, lr), axis=1)
@@ -69,7 +68,7 @@ def main():
     image_path = "/Users/msj/Code/font/training_data/positive_data/AaBuYu/uni5DA0_嶠.png"
     im = convert_raw_to_array(image_path, True)
     print(im.reshape((64, 64)))
-    Image.fromarray(uint8(im.reshape((64, 64)))).show()
+    Image.fromarray(np.uint8(im.reshape((64, 64)))).show()
 
     # a, b = load_image("/Users/msj/Code/font/test_data")
     # print(a.shape)
@@ -77,7 +76,6 @@ def main():
 
     # im = Image.open("/Users/msj/Pictures/mi/Camera/IMG_20160514_105141_HDR.jpg")
     # im.convert('L').show()
-
 
     pass
 
