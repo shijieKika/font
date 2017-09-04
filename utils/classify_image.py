@@ -8,6 +8,9 @@ import shutil
 file_name = re.compile(r"uni.*_.*\.png")
 
 def traversal_data(src_path, train_path, test_path, radio = 0.1):
+    if os.path.isdir(src_path) == False or  os.path.isdir(train_path) == False or os.path.isdir(test_path) == False:
+        print("path no exist")
+        return
     for font_dir_name in os.listdir(src_path):
         font_dir_path = os.path.join(src_path, font_dir_name)
         if os.path.isdir(font_dir_path):
@@ -31,17 +34,33 @@ def traversal_data(src_path, train_path, test_path, radio = 0.1):
                 else:
                     shutil.copy(item, font_train_path)
 
+def filter_data(src_path, radio = 0.1):
+    if os.path.isdir(src_path) == False:
+        print("path no exist")
+        return
+    for font_dir_name in os.listdir(src_path):
+        font_dir_path = os.path.join(src_path, font_dir_name)
+        if os.path.isdir(font_dir_path):
+            file_set = []
+            for font_file_name in os.listdir(font_dir_path):
+                if file_name.match(font_file_name) == None:
+                    continue
+                font_file_path = os.path.join(font_dir_path, font_file_name)
+                file_set.append(font_file_path)
 
+            barriar = len(file_set) * radio
+            for i, item in enumerate(file_set):
+                if i < barriar:
+                    pass
+                else:
+                    os.remove(item)
 
 
 def main():
-    traversal_data('/Users/msj/Code/font/training_data/positive_data', '/Users/msj/Code/font/training_data/positive_train', '/Users/msj/Code/font/training_data/positive_test')
-    # l = [i for i in range(10000)]
-    # print(l)
-    # random.shuffle(l)
-    # print(l)
-    # random.shuffle(l)
-    # print(l)
+    traversal_data('/Users/msj/Code/font/debug_data/full_data', '/Users/msj/Code/font/debug_data/train_data', '/Users/msj/Code/font/debug_data/test_data')
+
+    # path1 = "/Users/msj/Code/font/debug_data/full_data"
+    # filter_data(path1)
 
 if __name__ == '__main__':
     main()
