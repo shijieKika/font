@@ -3,7 +3,8 @@
 class ChineseDict:
     dict_ = dict()
     list_ = []
-    def load(self, path):
+
+    def __init__(self, path):
         self.dict_ = dict()
         self.list_ = []
         with open(path) as fp:
@@ -26,12 +27,13 @@ class ChineseDict:
         else:
             return None
 
+
 def main():
     dict_dir = "chinese.dict"
-    d = ChineseDict()
-    d.load(dict_dir)
+    d = ChineseDict(dict_dir)
     print(d.getWord(6738))
     print(d.getIndex('\xe8\xb2\xac'))
+
 
 if __name__ == '__main__':
     main()

@@ -7,8 +7,9 @@ import shutil
 
 file_name = re.compile(r"uni.*_.*\.png")
 
-def traversal_data(src_path, train_path, test_path, radio = 0.1):
-    if os.path.isdir(src_path) == False or  os.path.isdir(train_path) == False or os.path.isdir(test_path) == False:
+
+def traversal_data(src_path, train_path, test_path, radio=0.1):
+    if os.path.isdir(src_path) == False or os.path.isdir(train_path) == False or os.path.isdir(test_path) == False:
         print("path no exist")
         return
     for font_dir_name in os.listdir(src_path):
@@ -34,7 +35,8 @@ def traversal_data(src_path, train_path, test_path, radio = 0.1):
                 else:
                     shutil.copy(item, font_train_path)
 
-def filter_data(src_path, radio = 0.1):
+
+def filter_data(src_path, radio=0.1):
     if os.path.isdir(src_path) == False:
         print("path no exist")
         return
@@ -57,10 +59,12 @@ def filter_data(src_path, radio = 0.1):
 
 
 def main():
-    traversal_data('/Users/msj/Code/font/debug_data/full_data', '/Users/msj/Code/font/debug_data/train_data', '/Users/msj/Code/font/debug_data/test_data')
+    # traversal_data('../../data/debug_data/full_data', '../../data/debug_data/train_data', '../../data/debug_data/test_data')
 
-    # path1 = "/Users/msj/Code/font/debug_data/full_data"
+    # path1 = "../../data/debug_data/full_data"
     # filter_data(path1)
+    pass
+
 
 if __name__ == '__main__':
     main()
