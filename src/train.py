@@ -1,20 +1,27 @@
 # -*- coding:utf-8 -*-
 
-import tensorflow as tf
-from utils.load_image import ImageFactory
-import numpy as np
 import os
+import time
+import argparse
+import tensorflow as tf
+import numpy as np
+
+from utils.load_image import ImageFactory
 
 np.set_printoptions(threshold='nan')
+
+NUM_LABELS = 8877
+
+IMAGE_WIDTH = 64
+IMAGE_HEIGHT = 64
+IMAGE_DEPTH = 1
+
+FLAGS = None
 
 
 def flatten_tf_array(array):
     shape = array.get_shape().as_list()
     return tf.reshape(array, [shape[0], shape[1] * shape[2] * shape[3]])
-
-
-def accuracy(predictions, labels):
-    return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
 
 
 def variables_conv():
@@ -41,92 +48,120 @@ def variables_conv():
     return variables
 
 
-def model_conv(data, variables):
-    layer1_conv = tf.nn.conv2d(data, variables['w1'], [1, 1, 1, 1], padding='SAME', name='conv1')
-    layer1_relu = tf.nn.relu(layer1_conv + variables['b1'], name='relu1')
-    layer1_pool = tf.nn.max_pool(layer1_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME', name='pool1')
+def model_conv(data, variables, is_train=False):
+    layer1_conv = tf.nn.conv2d(data, variables['w1'], [1, 1, 1, 1], padding='SAME')
+    layer1_relu = tf.nn.relu(layer1_conv + variables['b1'])
+    layer1_pool = tf.nn.max_pool(layer1_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
-    layer2_conv = tf.nn.conv2d(layer1_pool, variables['w2'], [1, 1, 1, 1], padding='SAME', name='conv2')
-    layer2_relu = tf.nn.relu(layer2_conv + variables['b2'], name='relu2')
-    layer2_pool = tf.nn.max_pool(layer2_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME', name='pool2')
+    layer2_conv = tf.nn.conv2d(layer1_pool, variables['w2'], [1, 1, 1, 1], padding='SAME')
+    layer2_relu = tf.nn.relu(layer2_conv + variables['b2'])
+    layer2_pool = tf.nn.max_pool(layer2_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
-    layer3_conv = tf.nn.conv2d(layer2_pool, variables['w3'], [1, 1, 1, 1], padding='SAME', name='conv3')
-    layer3_relu = tf.nn.relu(layer3_conv + variables['b3'], name='relu3')
-    layer3_pool = tf.nn.max_pool(layer3_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME', name='pool3')
+    layer3_conv = tf.nn.conv2d(layer2_pool, variables['w3'], [1, 1, 1, 1], padding='SAME')
+    layer3_relu = tf.nn.relu(layer3_conv + variables['b3'])
+    layer3_pool = tf.nn.max_pool(layer3_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
-    layer4_conv = tf.nn.conv2d(layer3_pool, variables['w4'], [1, 1, 1, 1], padding='SAME', name='conv4')
-    layer4_relu = tf.nn.relu(layer4_conv + variables['b4'], name='relu4')
-    layer4_pool = tf.nn.max_pool(layer4_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME', name='pool4')
+    layer4_conv = tf.nn.conv2d(layer3_pool, variables['w4'], [1, 1, 1, 1], padding='SAME')
+    layer4_relu = tf.nn.relu(layer4_conv + variables['b4'])
+    layer4_pool = tf.nn.max_pool(layer4_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
     flat_layer = flatten_tf_array(layer4_pool)
-    layer5_full = tf.nn.xw_plus_b(flat_layer, variables['w5'], variables['b5'], name='full5')
-    layer5_relu = tf.nn.relu(layer5_full, name='relu5')
-    layer5_drop = tf.nn.dropout(layer5_relu, 0.5)
+    layer5_full = tf.nn.xw_plus_b(flat_layer, variables['w5'], variables['b5'])
+    layer5_relu = tf.nn.relu(layer5_full)
+
+    if is_train:
+        layer5_drop = tf.nn.dropout(layer5_relu, 0.5)
+    else:
+        layer5_drop = layer5_relu
 
     logits = tf.nn.xw_plus_b(layer5_drop, variables['w6'], variables['b6'])
 
     return logits
 
 
-batch_size = 64
-num_labels = 8877
-
-image_width = 64
-image_height = 64
-image_depth = 1
-
-learning_rate = 0.01
-num_steps = 200
-
-
 def main():
     graph = tf.Graph()
 
     with graph.as_default():
-        root_path = "../data/debug_data"
-        # train_dataset, train_labels = load_image(os.path.join(root_path, "train_data"), "utils/chinese.dict")
-        # test_dataset, test_labels = load_image(os.path.join(root_path, "test_data"), "utils/chinese.dict")
+        train_data_factory = ImageFactory(FLAGS.data_dir, "utils/chinese.dict")
+        valid_data_factory = ImageFactory(FLAGS.valid_dir, "utils/chinese.dict")
 
-        train_data_factory = ImageFactory(os.path.join(root_path, "train_data"), "utils/chinese.dict")
-        test_data_factory = ImageFactory(os.path.join(root_path, "test_data"), "utils/chinese.dict")
+        train_size = train_data_factory.size()
+        batch_size = FLAGS.batch_size
+        num_steps = train_size * FLAGS.epoch_num / batch_size
+        valid_dataset, valid_labels = valid_data_factory.getBatch(None, None)
 
-        tf_train_dataset = tf.placeholder(tf.float32, shape=(batch_size, image_width, image_height, image_depth))
-        tf_train_labels = tf.placeholder(tf.float32, shape=(batch_size, num_labels))
-
-        test_dataset, test_labels = test_data_factory.getBatch(None, None)
-        tf_test_dataset = tf.constant(test_dataset, tf.float32)
+        tf_train_dataset = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_DEPTH))
+        tf_train_labels = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, NUM_LABELS))
 
         variables = variables_conv()
-        logits = model_conv(tf_train_dataset, variables)
+        logits = model_conv(tf_train_dataset, variables, True)
 
         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=tf_train_labels))
 
         optimizer = tf.train.AdamOptimizer().minimize(loss)
 
-        train_prediction = tf.nn.softmax(logits)
-        test_prediction = tf.nn.softmax(model_conv(tf_test_dataset, variables))
+        def get_accuracy(sess, dataset, labels):
+            steps = dataset.shape[0]
+            total_count = 0.0
+            for start in range(0, steps, batch_size):
+                end = min(start + batch_size, steps)
+                data = dataset[start:end]
+                label = labels[start:end]
+                predictions = sess.run(tf.nn.softmax(model_conv(data, variables)))
+                match_count = np.sum(np.argmax(predictions, 1) == np.argmax(label, 1))
+                total_count += match_count
+            return 100 * total_count / steps
+
+        def get_accuracy1(predictions, labels):
+            return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1)) / predictions.shape[0])
 
         saver = tf.train.Saver()
 
         with tf.Session() as sess:
             tf.global_variables_initializer().run()
+            print("Run with: ")
+            print("\tdata_dir: %s" % FLAGS.data_dir)
+            print("\tvalid_dir: %s" % FLAGS.valid_dir)
+            print("\tcheckpoint_dir: %s" % FLAGS.checkpoint_dir)
+            print("\ttrain_size: %d" % train_size)
+            print("\tbatch_size: %d" % batch_size)
+            print("\tepoch_num: %d" % FLAGS.epoch_num)
+            print("\tsteps_per_checkpoint: %d" % FLAGS.steps_per_checkpoint)
+
+            start_time = time.time()
             for step in range(num_steps):
                 batch_data, batch_labels = train_data_factory.getBatch(step * batch_size, (step + 1) * batch_size)
                 feed_dict = {tf_train_dataset: batch_data, tf_train_labels: batch_labels}
-                _, l, predictions = sess.run([optimizer, loss, train_prediction], feed_dict=feed_dict)
+                _, l = sess.run([optimizer, loss], feed_dict=feed_dict)
 
-                if step % 100 == 0:
-                    if step % 100 == 0:
-                        saver.save(sess, 'tmp/my-model', global_step=step)
+                if step % FLAGS.steps_per_checkpoint == 0:
+                    # if step % 1000 == 0:
+                    #     saver.save(sess, FLAGS.checkpoint_dir, global_step=step)
 
-                    train_accuracy = accuracy(predictions, batch_labels)
-                    test_accuracy = accuracy(test_prediction.eval(), test_labels)
-                    message = "step {:04d} : loss is {:06.2f}, accuracy on training set {:02.2f} %, accuracy on test set {:02.2f} %".format(
-                        step, l, train_accuracy, test_accuracy)
+                    batch_accuracy = get_accuracy(sess, batch_data, batch_labels)
+                    valid_accuracy = get_accuracy(sess, valid_dataset, valid_labels)
+
+                    elapsed_time = time.time() - start_time
+                    start_time = time.time()
+
+                    epoch = float(step) * batch_size / train_size
+                    avg_time = 1000 * elapsed_time / FLAGS.steps_per_checkpoint
+
+                    message = 'Step %d (epoch %.2f), %.1f ms, MiniBatch loss: %.3f, MiniBatch accuracy: %02.2f %%, Validation accuracy: %02.2f %%' % (
+                        step, epoch, avg_time, l, batch_accuracy, valid_accuracy)
+
                     print(message)
-                    print("logits:", np.argmax(predictions, 1))
-                    print("labels:", np.argmax(batch_labels, 1))
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_dir", help="need data dir")
+    parser.add_argument("--valid_dir", help="need valid dir")
+    parser.add_argument("--checkpoint_dir", help="need checkpoint dir")
+    parser.add_argument("--epoch_num", type=int, default=50)
+    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--steps_per_checkpoint", type=int, default=10000)
+
+    FLAGS = parser.parse_args()
     main()

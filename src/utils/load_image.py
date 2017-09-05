@@ -62,6 +62,9 @@ class ImageFactory:
                     self.font_path_list.append(font_file_path)
         # random.shuffle(self.font_path_list)
 
+    def size(self):
+        return len(self.font_path_list)
+
     def getBatch(self, start, end):
         start = start if start != None else 0
         end = end if end != None else len(self.font_path_list)
