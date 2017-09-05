@@ -83,13 +83,16 @@ def main():
     graph = tf.Graph()
 
     with graph.as_default():
+        print("Init")
         train_data_factory = ImageFactory(FLAGS.data_dir, "utils/chinese.dict")
         valid_data_factory = ImageFactory(FLAGS.valid_dir, "utils/chinese.dict")
+        print("Finish creating data factory, train: %d, valid: %d" % (train_data_factory.size(), valid_data_factory.size()))
 
         train_size = train_data_factory.size()
         batch_size = FLAGS.batch_size
         num_steps = train_size * FLAGS.epoch_num / batch_size
         valid_dataset, valid_labels = valid_data_factory.getBatch(None, None)
+        print("Finish getting valid data with shape %s" % str(valid_dataset.shape))
 
         tf_train_dataset = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_DEPTH))
         tf_train_labels = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, NUM_LABELS))
@@ -124,7 +127,6 @@ def main():
             print("\tdata_dir: %s" % FLAGS.data_dir)
             print("\tvalid_dir: %s" % FLAGS.valid_dir)
             print("\tcheckpoint_dir: %s" % FLAGS.checkpoint_dir)
-            print("\ttrain_size: %d" % train_size)
             print("\tbatch_size: %d" % batch_size)
             print("\tepoch_num: %d" % FLAGS.epoch_num)
             print("\tsteps_per_checkpoint: %d" % FLAGS.steps_per_checkpoint)
