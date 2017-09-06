@@ -46,8 +46,8 @@ def convert_raw_to_array(file_path, bin_pro=False):
     return result.reshape((64, 64, 1))
 
 
-class ImageFactory:
-    def __init__(self, src_path, chinese_path='chinese.dict'):
+class ImageGallery:
+    def __init__(self, src_path, chinese_path):
         self.chinese = chinese_dict.ChineseDict(chinese_path)
         self.font_path_list = []
         for font_dir_name in os.listdir(src_path):
@@ -60,7 +60,7 @@ class ImageFactory:
                     font_file_path = os.path.join(font_dir_path, font_file_name)
 
                     self.font_path_list.append(font_file_path)
-        # random.shuffle(self.font_path_list)
+        random.shuffle(self.font_path_list)
 
     def size(self):
         return len(self.font_path_list)
@@ -103,12 +103,12 @@ class ImageFactory:
 def main():
     np.set_printoptions(threshold='nan')
 
-    # image_path = "../../data/training_data/positive_data/AaBuYu/uni5DA0_嶠.png"
+    # image_path = "/Users/msj/Code/font/data/training_data/positive_data/AaBuYu/uni5DA0_嶠.png"
     # im = convert_raw_to_array(image_path, True)
     # print(im.reshape((64, 64)))
     # Image.fromarray(np.uint8(im.reshape((64, 64)))).show()
 
-    a = ImageFactory("../../data/debug_data/train_data")
+    a = ImageGallery("/Users/msj/Code/font/data/debug_data/positive_train", 'chinese.dict')
     for i in range(0, 100):
         im, la = a.getBatch(i * 16, (i + 1) * 16)
         print(im.shape, la.shape)

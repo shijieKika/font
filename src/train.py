@@ -5,24 +5,11 @@ import time
 import argparse
 import tensorflow as tf
 import numpy as np
-
-from utils.load_image import ImageFactory
+from utils.load_image import ImageGallery
 
 np.set_printoptions(threshold='nan')
 
-NUM_LABELS = 8877
-
-IMAGE_WIDTH = 64
-IMAGE_HEIGHT = 64
-IMAGE_DEPTH = 1
-
 FLAGS = None
-
-
-def flatten_tf_array(array):
-    shape = array.get_shape().as_list()
-    return tf.reshape(array, [shape[0], shape[1] * shape[2] * shape[3]])
-
 
 def variables_conv():
     w1 = tf.Variable(tf.truncated_normal([3, 3, 1, 100], stddev=0.1))
@@ -65,7 +52,9 @@ def model_conv(data, variables, is_train=False):
     layer4_relu = tf.nn.relu(layer4_conv + variables['b4'])
     layer4_pool = tf.nn.max_pool(layer4_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
-    flat_layer = flatten_tf_array(layer4_pool)
+    l4_shape = layer4_pool.get_shape().as_list()
+    flat_layer = tf.reshape(layer4_pool, [l4_shape[0], l4_shape[1] * l4_shape[2] * l4_shape[3]])
+
     layer5_full = tf.nn.xw_plus_b(flat_layer, variables['w5'], variables['b5'])
     layer5_relu = tf.nn.relu(layer5_full)
 
@@ -84,18 +73,16 @@ def main():
 
     with graph.as_default():
         print("Init")
-        train_data_factory = ImageFactory(FLAGS.data_dir, "utils/chinese.dict")
-        valid_data_factory = ImageFactory(FLAGS.valid_dir, "utils/chinese.dict")
-        print("Finish creating data factory, train: %d, valid: %d" % (train_data_factory.size(), valid_data_factory.size()))
+        train_data_factory = ImageGallery(FLAGS.data_dir, FLAGS.chinese_dict_dir)
+        valid_data_factory = ImageGallery(FLAGS.valid_dir, FLAGS.chinese_dict_dir)
 
         train_size = train_data_factory.size()
         batch_size = FLAGS.batch_size
         num_steps = train_size * FLAGS.epoch_num / batch_size
         valid_dataset, valid_labels = valid_data_factory.getBatch(None, None)
-        print("Finish getting valid data with shape %s" % str(valid_dataset.shape))
 
-        tf_train_dataset = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_DEPTH))
-        tf_train_labels = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, NUM_LABELS))
+        tf_train_dataset = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, FLAGS.image_width, FLAGS.image_height, FLAGS.image_depth))
+        tf_train_labels = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, FLAGS.label_num))
 
         variables = variables_conv()
         logits = model_conv(tf_train_dataset, variables, True)
@@ -127,6 +114,9 @@ def main():
             print("\tdata_dir: %s" % FLAGS.data_dir)
             print("\tvalid_dir: %s" % FLAGS.valid_dir)
             print("\tcheckpoint_dir: %s" % FLAGS.checkpoint_dir)
+            print("\tchinese_dict_dir: %s" % FLAGS.chinese_dict_dir)
+            print("\ttrain_size: %d" % train_size)
+            print("\tvalid_size: %d" % valid_data_factory.size())
             print("\tbatch_size: %d" % batch_size)
             print("\tepoch_num: %d" % FLAGS.epoch_num)
             print("\tsteps_per_checkpoint: %d" % FLAGS.steps_per_checkpoint)
@@ -138,8 +128,7 @@ def main():
                 _, l = sess.run([optimizer, loss], feed_dict=feed_dict)
 
                 if step % FLAGS.steps_per_checkpoint == 0:
-                    # if step % 1000 == 0:
-                    #     saver.save(sess, FLAGS.checkpoint_dir, global_step=step)
+                    # saver.save(sess, FLAGS.checkpoint_dir, global_step=step)
 
                     batch_accuracy = get_accuracy(sess, batch_data, batch_labels)
                     valid_accuracy = get_accuracy(sess, valid_dataset, valid_labels)
@@ -161,9 +150,16 @@ if __name__ == '__main__':
     parser.add_argument("--data_dir", help="need data dir")
     parser.add_argument("--valid_dir", help="need valid dir")
     parser.add_argument("--checkpoint_dir", help="need checkpoint dir")
+    parser.add_argument("--chinese_dict_dir", help="need chinese dict dir")
     parser.add_argument("--epoch_num", type=int, default=50)
     parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--steps_per_checkpoint", type=int, default=10000)
+    parser.add_argument("--steps_per_checkpoint", type=int, default=1000)
+
+    # const
+    parser.add_argument("--label_num", type=int, default=8877)
+    parser.add_argument("--image_width", type=int, default=64)
+    parser.add_argument("--image_height", type=int, default=64)
+    parser.add_argument("--image_depth", type=int, default=1)
 
     FLAGS = parser.parse_args()
     main()
