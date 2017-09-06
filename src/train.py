@@ -3,6 +3,7 @@
 import os
 import time
 import argparse
+import random
 import tensorflow as tf
 import numpy as np
 from utils.load_image import ImageGallery
@@ -10,6 +11,7 @@ from utils.load_image import ImageGallery
 np.set_printoptions(threshold='nan')
 
 FLAGS = None
+
 
 def variables_conv():
     w1 = tf.Variable(tf.truncated_normal([3, 3, 1, 100], stddev=0.1))
@@ -68,6 +70,14 @@ def model_conv(data, variables, is_train=False):
     return logits
 
 
+def shuffle_double(a, b):
+    r_state = np.random.get_state()
+    np.random.shuffle(a)
+    np.random.set_state(r_state)
+    np.random.shuffle(b)
+    return a, b
+
+
 def main():
     graph = tf.Graph()
 
@@ -81,7 +91,8 @@ def main():
         num_steps = train_size * FLAGS.epoch_num / batch_size
         valid_dataset, valid_labels = valid_data_factory.getBatch(None, None)
 
-        tf_train_dataset = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, FLAGS.image_width, FLAGS.image_height, FLAGS.image_depth))
+        tf_train_dataset = tf.placeholder(tf.float32, shape=(
+            FLAGS.batch_size, FLAGS.image_width, FLAGS.image_height, FLAGS.image_depth))
         tf_train_labels = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, FLAGS.label_num))
 
         variables = variables_conv()
@@ -91,15 +102,16 @@ def main():
 
         optimizer = tf.train.AdamOptimizer().minimize(loss)
 
+        eval_prediction = tf.nn.softmax(model_conv(tf_train_dataset, variables))
+
         def get_accuracy(sess, dataset, labels):
             steps = dataset.shape[0]
             total_count = 0.0
-            for start in range(0, steps, batch_size):
-                end = min(start + batch_size, steps)
-                data = dataset[start:end]
-                label = labels[start:end]
-                predictions = sess.run(tf.nn.softmax(model_conv(data, variables)))
-                match_count = np.sum(np.argmax(predictions, 1) == np.argmax(label, 1))
+            for end in range(batch_size, steps + 1, batch_size):
+                batch_data = dataset[end - batch_size:end]
+                batch_label = labels[end - batch_size:end]
+                predictions = sess.run(eval_prediction, feed_dict={tf_train_dataset: batch_data, })
+                match_count = np.sum(np.argmax(predictions, 1) == np.argmax(batch_label, 1))
                 total_count += match_count
             return 100 * total_count / steps
 
@@ -128,8 +140,10 @@ def main():
                 _, l = sess.run([optimizer, loss], feed_dict=feed_dict)
 
                 if step % FLAGS.steps_per_checkpoint == 0:
-                    # saver.save(sess, FLAGS.checkpoint_dir, global_step=step)
+                    if FLAGS.checkpoint_dir != 'None':
+                        saver.save(sess, os.path.join(FLAGS.checkpoint_dir, 'font_model'), global_step=step)
 
+                    valid_dataset, valid_labels = shuffle_double(valid_dataset, valid_labels)
                     batch_accuracy = get_accuracy(sess, batch_data, batch_labels)
                     valid_accuracy = get_accuracy(sess, valid_dataset, valid_labels)
 
@@ -149,11 +163,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", help="need data dir")
     parser.add_argument("--valid_dir", help="need valid dir")
-    parser.add_argument("--checkpoint_dir", help="need checkpoint dir")
+    parser.add_argument("--checkpoint_dir", default='None', help="need checkpoint dir")
     parser.add_argument("--chinese_dict_dir", help="need chinese dict dir")
     parser.add_argument("--epoch_num", type=int, default=50)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--steps_per_checkpoint", type=int, default=1000)
+    # parser.add_argument("--gpu", action='store_true')
 
     # const
     parser.add_argument("--label_num", type=int, default=8877)
