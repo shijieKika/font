@@ -6,6 +6,7 @@
 3. 整合 train.py 与 load_image.py 参数
 4. tensorboard 的使用
 5. gpu 使用设置，tensorflow显存使用机制，显存最大占用率
+6. 测试最大batch
 
 ## 一、数据预处理
 1. 八方向梯度特征 sobel算子
