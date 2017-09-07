@@ -26,7 +26,7 @@ def train():
         print("Init")
         device = '/gpu:0' if FLAGS.gpu else '/cpu:0'
         config = tf.ConfigProto()
-        config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_fraction if FLAGS.gpu else 0
+        config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_fraction if FLAGS.gpu else 0.01
 
         batch_size = FLAGS.batch_size
         train_data_factory = ImageGallery(FLAGS.data_dir, FLAGS.chinese_dict_dir, FLAGS.image_size, FLAGS.image_channel,

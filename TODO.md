@@ -3,9 +3,7 @@
 ## 零、工程
 1. 完善模型的save、restore等逻辑
 2. tensorboard 的使用
-3. gpu 使用设置，tensorflow显存使用机制，显存最大占用率
 4. 测试最大batch
-5. 文件直接加到内存 *
 
 ## 一、数据预处理
 1. 八方向梯度特征 sobel算子
@@ -18,7 +16,7 @@
 3. 调整 dropout
 4. 没有全连接层时如何dropout
 5. ResNet, Inception
-6. 去掉全连接层 *
+6. 去掉全连接层
 7. 减少pooling数量，卷积3 * 3 *
 8. 调整dropout *
 
@@ -33,3 +31,5 @@
 ## Done
 1. 将所有 Op 抽象出类，使得 train、inference、test 等过程与main分离
 2. 整合 train.py 与 load_image.py 参数
+3. 文件直接加到内存
+4. gpu 使用设置，tensorflow显存使用机制，显存最大占用率
