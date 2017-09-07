@@ -9,16 +9,16 @@ def variables_conv(label_size, device):
         w1 = tf.Variable(tf.truncated_normal([3, 3, 1, 100], stddev=0.1))
         b1 = tf.Variable(tf.zeros([100]))
 
-        w2 = tf.Variable(tf.truncated_normal([2, 2, 100, 200], stddev=0.1))
+        w2 = tf.Variable(tf.truncated_normal([3, 3, 100, 200], stddev=0.1))
         b2 = tf.Variable(tf.zeros([200]))
 
-        w3 = tf.Variable(tf.truncated_normal([2, 2, 200, 300], stddev=0.1))
+        w3 = tf.Variable(tf.truncated_normal([3, 3, 200, 300], stddev=0.1))
         b3 = tf.Variable(tf.zeros([300]))
 
-        w4 = tf.Variable(tf.truncated_normal([2, 2, 300, 400], stddev=0.1))
+        w4 = tf.Variable(tf.truncated_normal([3, 3, 300, 400], stddev=0.1))
         b4 = tf.Variable(tf.zeros([400]))
 
-        w5 = tf.Variable(tf.truncated_normal([4 * 4 * 400, 500], stddev=0.1))
+        w5 = tf.Variable(tf.truncated_normal([8 * 8 * 400, 500], stddev=0.1))
         b5 = tf.Variable(tf.constant(0.1, shape=[500]))
 
         w6 = tf.Variable(tf.truncated_normal([500, label_size], stddev=0.1))
@@ -33,9 +33,8 @@ def model_conv(variables, data, dropout_prob, device):
     with tf.device(device):
         layer1_conv = tf.nn.conv2d(data, variables['w1'], [1, 1, 1, 1], padding='SAME')
         layer1_relu = tf.nn.relu(layer1_conv + variables['b1'])
-        layer1_pool = tf.nn.max_pool(layer1_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
-        layer2_conv = tf.nn.conv2d(layer1_pool, variables['w2'], [1, 1, 1, 1], padding='SAME')
+        layer2_conv = tf.nn.conv2d(layer1_relu, variables['w2'], [1, 1, 1, 1], padding='SAME')
         layer2_relu = tf.nn.relu(layer2_conv + variables['b2'])
         layer2_pool = tf.nn.max_pool(layer2_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 

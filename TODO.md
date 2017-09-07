@@ -14,11 +14,8 @@
 1. 增大cnn深度与宽度
 2. network in network
 3. 调整 dropout
-4. 没有全连接层时如何dropout
-5. ResNet, Inception
-6. 去掉全连接层
-7. 减少pooling数量，卷积3 * 3 *
-8. 调整dropout *
+4. ResNet, Inception
+5. 去掉全连接层,此时如何 dropout
 
 ## 三、训练
 1. 利用mnist进行预训练获得初识参数
@@ -33,3 +30,4 @@
 2. 整合 train.py 与 load_image.py 参数
 3. 文件直接加到内存
 4. gpu 使用设置，tensorflow显存使用机制，显存最大占用率
+5. 减少pooling数量，卷积3 * 3
