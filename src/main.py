@@ -99,9 +99,9 @@ if __name__ == '__main__':
     parser.add_argument("--checkpoint_dir", default='None', help="Need checkpoint dir")
     parser.add_argument("--chinese_dict_dir", help="Need chinese dict dir")
 
-    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--epoch_size", type=int, default=20)
-    parser.add_argument("--steps_per_checkpoint", type=int, default=100)
+    parser.add_argument("--steps_per_checkpoint", type=int, default=500)
     parser.add_argument("--dropout_prob", type=float, default=0.5)
 
     # const

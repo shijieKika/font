@@ -24,6 +24,7 @@
 4. 尝试不同优化器
 5. 负例 -1 loss *
 6. 准确率 正例、负例分开 *
+7. 每epoch后shuffle *
 
 ## Done
 1. 将所有 Op 抽象出类，使得 train、inference、test 等过程与main分离
