@@ -15,6 +15,7 @@ class ImageGallery:
     def __init__(self, src_path, chinese_path, image_size, image_channel, image_edge, bin_process=True):
         self.chinese = ChineseDict(chinese_path)
         self.font_path_list = []
+        self.path_image_map = {}
         self.image_size = image_size
         self.image_channel = image_channel
         self.inner_size = image_size - 2 * image_edge
@@ -65,11 +66,19 @@ class ImageGallery:
         font_list = []
         label_list = []
         for font_file_path in batch_path:
-            font_list.append(self.convert_raw_to_array(font_file_path, True))
-            chinese_word = re_chinese.findall(font_file_path)[0]
-            label = np.zeros(self.chinese.size())
-            label[self.chinese.getIndex(chinese_word)] = 1
-            label_list.append(label)
+            if font_file_path in self.path_image_map:
+                font_list.append(self.path_image_map[font_file_path][0])
+                label_list.append(self.path_image_map[font_file_path][1])
+            else:
+                image_array = self.convert_raw_to_array(font_file_path, True)
+                chinese_word = re_chinese.findall(font_file_path)[0]
+                label = np.zeros(self.chinese.size())
+                label[self.chinese.getIndex(chinese_word)] = 1
+
+                self.path_image_map[font_file_path] = (image_array, label)
+                font_list.append(image_array)
+                label_list.append(label)
+
         return np.array(font_list, dtype=np.float32), np.array(label_list, dtype=np.float32)
 
     def convert_raw_to_array(self, file_path, bin_pro):
