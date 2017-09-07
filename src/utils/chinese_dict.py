@@ -15,6 +15,9 @@ class ChineseDict:
                 self.list_.append(line)
                 index += 1
 
+    def size(self):
+        return len(self.list_)
+
     def getWord(self, i):
         if i >= 0 and i < len(self.list_):
             return self.list_[i]
@@ -29,7 +32,7 @@ class ChineseDict:
 
 
 def main():
-    dict_dir = "chinese.dict"
+    dict_dir = "/Users/msj/Code/font/font/static/chinese.dict"
     d = ChineseDict(dict_dir)
     print(d.getWord(6738))
     print(d.getIndex('\xe8\xb2\xac'))
