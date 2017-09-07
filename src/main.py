@@ -24,6 +24,7 @@ def train():
 
     with graph.as_default():
         print("Init")
+        device = '/gpu:0' if FLAGS.gpu else '/cpu:0'
         batch_size = FLAGS.batch_size
         train_data_factory = ImageGallery(FLAGS.data_dir, FLAGS.chinese_dict_dir, FLAGS.image_size, FLAGS.image_channel,
                                           FLAGS.image_edge)
@@ -34,13 +35,13 @@ def train():
         num_steps = train_size * FLAGS.epoch_size / batch_size
         valid_datas, valid_labels = valid_data_factory.get_batch(None, None)
 
-        model = FontModel(FLAGS.batch_size, FLAGS.image_size, FLAGS.image_channel, train_data_factory.label_size())
+        model = FontModel(FLAGS.batch_size, FLAGS.image_size, FLAGS.image_channel, train_data_factory.label_size(), device)
 
         saver = tf.train.Saver()
 
         with tf.Session() as sess:
             tf.global_variables_initializer().run()
-            print("Run with: ")
+            print("Run with: %s" % device)
             print("\tdata_dir: %s" % FLAGS.data_dir)
             print("\tvalid_dir: %s" % FLAGS.valid_dir)
             print("\tcheckpoint_dir: %s" % FLAGS.checkpoint_dir)
@@ -85,7 +86,7 @@ def inference():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    # parser.add_argument("--gpu", action='store_true')
+    parser.add_argument("--gpu", action='store_true')
     parser.add_argument("--train", action='store_true')
     parser.add_argument("--inference", action='store_true')
 
