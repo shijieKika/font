@@ -39,6 +39,9 @@ class ImageGallery:
     def label_size(self):
         return self.chinese.size()
 
+    def shuffle(self):
+        random.shuffle(self.font_path_list)
+
     def get_batch(self, start, end):
         start = start if start != None else 0
         end = end if end != None else len(self.font_path_list)
