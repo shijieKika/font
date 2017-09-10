@@ -23,8 +23,7 @@
 1. 利用mnist进行预训练获得初识参数
 2. 损失函数增加正则项
 4. 尝试不同优化器
-
-
+5. 负例 -1 loss
 
 ## Done
 1. 将所有 Op 抽象出类，使得 train、inference、test 等过程与main分离
@@ -35,4 +34,3 @@
 6. 每个epoch做一次accuracy，平时只打印 loss
 7. 每epoch后shuffle
 6. 准确率 正例、负例都进行统计
-5. 负例 -1 loss
