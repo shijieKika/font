@@ -59,10 +59,16 @@ def filter_data(src_path, radio=0.1):
 
 
 def main():
-    # traversal_data('../../data/debug_data/full_data', '../../data/debug_data/train_data', '../../data/debug_data/test_data')
+    traversal_data('/Users/msj/Code/font/data/debug_data/negative_data',
+                   '/Users/msj/Code/font/data/debug_data/negative_train',
+                   '/Users/msj/Code/font/data/debug_data/negative_valid')
 
     # path1 = "../../data/debug_data/full_data"
     # filter_data(path1)
+
+    # traversal_data('/home/mashijie/data/training_data/negative_data',
+    #                '/home/mashijie/data/training_data/negative_train', '../../data/debug_data/negative_valid')
+
     pass
 
 

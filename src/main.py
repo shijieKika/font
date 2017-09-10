@@ -11,6 +11,21 @@ from font_model import FontModel
 FLAGS = None
 
 
+def get_accuracy(labels, predictions, loss_scales):
+    data_count = labels.shape[0]
+    positive_count = np.sum(np.maximum(loss_scales, 0))
+    negative_count = data_count - positive_count
+
+    match_count = np.sum(np.argmax(labels, 1) == np.argmax(predictions, 1))
+    positive_match_count = np.sum(np.argmax(labels, 1) == np.argmax(predictions, 1) * loss_scales)
+    negative_match_count = match_count - positive_match_count
+
+    positive_p = 0 if positive_count == 0 else 100 * positive_match_count / positive_count
+    negative_p = 0 if negative_count == 0 else 100 - 100 * negative_match_count / negative_count
+
+    return positive_p, negative_p
+
+
 def train():
     graph = tf.Graph()
 
@@ -21,13 +36,21 @@ def train():
         config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_fraction if FLAGS.gpu else 0.01
 
         batch_size = FLAGS.batch_size
-        train_data_factory = ImageGallery(FLAGS.data_dir, FLAGS.chinese_dict_dir, FLAGS.image_size, FLAGS.image_channel,
+        train_data_factory = ImageGallery(FLAGS.chinese_dict_dir, FLAGS.image_size,
+                                          FLAGS.image_channel,
                                           FLAGS.image_edge)
-        valid_data_factory = ImageGallery(FLAGS.valid_dir, FLAGS.chinese_dict_dir, FLAGS.image_size,
+        train_positive_size = train_data_factory.add_data(FLAGS.train_positive_dir, 1.0)
+        train_negative_size = 0 if FLAGS.train_negative_dir is None else train_data_factory.add_data(
+            FLAGS.train_negative_dir, -1.0)
+
+        valid_data_factory = ImageGallery(FLAGS.chinese_dict_dir, FLAGS.image_size,
                                           FLAGS.image_channel, FLAGS.image_edge)
 
+        valid_positive_size = valid_data_factory.add_data(FLAGS.valid_positive_dir, 1.0)
+        valid_negative_size = valid_data_factory.add_data(FLAGS.valid_negative_dir, -1.0)
+
         # pre-load valid data
-        _, _ = valid_data_factory.get_batch(None, None)
+        _, _, _ = valid_data_factory.get_batch(None, None)
 
         model = FontModel(FLAGS.batch_size, FLAGS.image_size, FLAGS.image_channel, train_data_factory.label_size(),
                           device)
@@ -37,39 +60,43 @@ def train():
         with tf.Session(config=config) as sess:
             tf.global_variables_initializer().run()
             print("Run with: %s" % device)
-            print("\tdata_dir: %s" % FLAGS.data_dir)
-            print("\tvalid_dir: %s" % FLAGS.valid_dir)
-            print("\tchinese_dict_dir: %s" % FLAGS.chinese_dict_dir)
-            print("\tcheckpoint_dir: %s" % FLAGS.checkpoint_dir)
-            print("\ttrain_size: %d" % train_data_factory.size())
-            print("\tvalid_size: %d" % valid_data_factory.size())
             print("\tbatch_size: %d" % batch_size)
             print("\tepoch_size: %d" % FLAGS.epoch_size)
-            print("\tsteps_per_checkpoint: %d" % FLAGS.steps_per_checkpoint)
+            print("\ttrain_positive_dir: %s, size %d" % (FLAGS.train_positive_dir, train_positive_size))
+            print("\ttrain_negative_dir: %s, size %d" % (FLAGS.train_negative_dir, train_negative_size))
+            print("\tvalid_positive_dir: %s, size %d" % (FLAGS.valid_positive_dir, valid_positive_size))
+            print("\tvalid_negative_dir: %s, size %d" % (FLAGS.valid_negative_dir, valid_negative_size))
+            print("\tcheckpoint_dir: %s, steps_per_checkpoint: %d" % (FLAGS.checkpoint_dir, FLAGS.steps_per_checkpoint))
+            print("\tchinese_dict_dir: %s" % FLAGS.chinese_dict_dir)
 
             total_step = 0
             step_size = train_data_factory.size() / batch_size
             for epoch_step in range(FLAGS.epoch_size):
                 train_data_factory.shuffle()
                 for step in range(step_size):
-                    batch_data, batch_label = train_data_factory.get_batch(step * batch_size, (step + 1) * batch_size)
-                    l, p = model.step(sess, batch_data, batch_label, FLAGS.dropout_prob, only_forward=False)
+                    batch_data, batch_label, batch_loss_scale = train_data_factory.get_batch(step * batch_size,
+                                                                                             (step + 1) * batch_size)
+                    l, p = model.step(sess, batch_data, batch_label, batch_loss_scale, FLAGS.dropout_prob,
+                                      only_forward=False)
 
                     if total_step % FLAGS.steps_per_checkpoint == 0:
                         if FLAGS.checkpoint_dir != 'None':
                             saver.save(sess, os.path.join(FLAGS.checkpoint_dir, 'font_model'), global_step=total_step)
 
-                        batch_accuracy = model.get_accuracy(sess, batch_data, batch_label)
-                        message = '%s, Step %d, MiniBatch loss: %.3f, MiniBatch accuracy: %02.2f %%' % (
-                            time.strftime('%X %x %Z'), total_step, l, batch_accuracy)
+                        batch_positive_accuracy, batch_negative_accuracy = get_accuracy(batch_label, p,
+                                                                                        batch_loss_scale)
+                        message = '%s, Step %d, MiniBatch loss: %.3f, MiniBatch positive accuracy: %02.2f %%, negative accuracy: %02.2f %%' % (
+                            time.strftime('%X %x %Z'), total_step, l, batch_positive_accuracy, batch_negative_accuracy)
                         print(message)
                     total_step += 1
 
                 valid_data_factory.shuffle()
-                valid_datas, valid_labels = valid_data_factory.get_batch(None, None)
-                valid_accuracy = model.get_accuracy(sess, valid_datas, valid_labels)
-                message = '%s, Epoch %d, Valid accuracy %02.2f %%' % (
-                    time.strftime('%X %x %Z'), epoch_step + 1, valid_accuracy)
+                valid_datas, valid_labels, valid_pn_scales = valid_data_factory.get_batch(None, None)
+                positive_valid_accuracy, negative_valid_accuracy = model.get_accuracy(sess, valid_datas, valid_labels,
+                                                                                      valid_pn_scales)
+
+                message = '%s, Epoch %d, Validation positive accuracy %02.2f %%, negative accuracy %02.2f %%' % (
+                    time.strftime('%X %x %Z'), epoch_step + 1, positive_valid_accuracy, negative_valid_accuracy)
                 print(message)
 
 
@@ -88,8 +115,10 @@ if __name__ == '__main__':
     parser.add_argument("--train", action='store_true')
     parser.add_argument("--inference", action='store_true')
 
-    parser.add_argument("--data_dir", help="Need data dir")
-    parser.add_argument("--valid_dir", help="Need valid dir")
+    parser.add_argument("--train_positive_dir", help="Need positive train dir")
+    parser.add_argument("--train_negative_dir", help="Need negative train dir", default=None)
+    parser.add_argument("--valid_positive_dir", help="Need positive valid dir")
+    parser.add_argument("--valid_negative_dir", help="Need negative valid dir")
     parser.add_argument("--checkpoint_dir", default='None', help="Need checkpoint dir")
     parser.add_argument("--chinese_dict_dir", help="Need chinese dict dir")
 

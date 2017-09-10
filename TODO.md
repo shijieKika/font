@@ -3,13 +3,14 @@
 ## 零、工程
 1. 完善模型的save、restore等逻辑
 2. tensorboard 的使用
-6. 准确率 正例、负例都进行统计 *
-
+3. train accuracy in all data *
+4. accuracy in tf *
 
 ## 一、数据预处理
 1. 八方向梯度特征 sobel算子
 2. 尝试不同分辨率：(64, 64), (96, 96)等
-3. 数据增广 random crop **
+3. 数据增广 random crop *
+4. 数据分类 train valid *
 
 ## 二、网络结构
 1. network in network
@@ -22,7 +23,7 @@
 1. 利用mnist进行预训练获得初识参数
 2. 损失函数增加正则项
 4. 尝试不同优化器
-5. 负例 -1 loss *
+
 
 
 ## Done
@@ -33,3 +34,5 @@
 5. 减少pooling数量，卷积3 * 3
 6. 每个epoch做一次accuracy，平时只打印 loss
 7. 每epoch后shuffle
+6. 准确率 正例、负例都进行统计
+5. 负例 -1 loss

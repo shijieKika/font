@@ -12,7 +12,7 @@ re_chinese = re.compile(r"uni.*_(.*)\.png")
 
 
 class ImageGallery:
-    def __init__(self, src_path, chinese_path, image_size, image_channel, image_edge, bin_process=True):
+    def __init__(self, chinese_path, image_size, image_channel, image_edge, bin_process=True):
         self.chinese = ChineseDict(chinese_path)
         self.font_path_list = []
         self.path_image_map = {}
@@ -23,6 +23,8 @@ class ImageGallery:
         self.ud = np.repeat(255, image_edge * image_size).reshape(image_edge, image_size)
         self.bin_process = bin_process
 
+    def add_data(self, src_path, loss_scale=1.0):
+        count = 0
         for font_dir_name in os.listdir(src_path):
             font_dir_path = os.path.join(src_path, font_dir_name)
             if os.path.isdir(font_dir_path):
@@ -30,8 +32,10 @@ class ImageGallery:
                     if re_file_name.match(font_file_name) == None:
                         continue
                     font_file_path = os.path.join(font_dir_path, font_file_name)
-                    self.font_path_list.append(font_file_path)
+                    self.font_path_list.append((font_file_path, loss_scale))
+                    count += 1
         random.shuffle(self.font_path_list)
+        return count
 
     def size(self):
         return len(self.font_path_list)
@@ -68,10 +72,14 @@ class ImageGallery:
 
         font_list = []
         label_list = []
-        for font_file_path in batch_path:
+        loss_scale_list = []
+        for font_file_path_pair in batch_path:
+            font_file_path = font_file_path_pair[0]
+            pn_scale = font_file_path_pair[1]
             if font_file_path in self.path_image_map:
                 font_list.append(self.path_image_map[font_file_path][0])
                 label_list.append(self.path_image_map[font_file_path][1])
+                loss_scale_list.append(pn_scale)
             else:
                 image_array = self.convert_raw_to_array(font_file_path, True)
                 chinese_word = re_chinese.findall(font_file_path)[0]
@@ -81,8 +89,10 @@ class ImageGallery:
                 self.path_image_map[font_file_path] = (image_array, label)
                 font_list.append(image_array)
                 label_list.append(label)
+                loss_scale_list.append(pn_scale)
 
-        return np.array(font_list, dtype=np.float32), np.array(label_list, dtype=np.float32)
+        return np.array(font_list, dtype=np.float32), np.array(label_list, dtype=np.float32), np.array(loss_scale_list,
+                                                                                                       dtype=np.float32)
 
     def convert_raw_to_array(self, file_path, bin_pro):
         raw_photo = np.array(Image.open(file_path))
@@ -116,11 +126,12 @@ class ImageGallery:
 
 
 def main():
-    a = ImageGallery("/Users/msj/Code/font/data/debug_data/positive_train",
-                     '/Users/msj/Code/font/font/static/chinese.dict', 64, 1, 2, bin_process=False)
+    a = ImageGallery('/Users/msj/Code/font/font/static/chinese.dict', 64, 1, 2, bin_process=False)
+    a.add_data("/Users/msj/Code/font/data/debug_data/positive_train", 1.0)
     for i in range(0, 1):
-        im, la = a.get_batch(i * 16, (i + 1) * 16)
-        print(im.shape, la.shape)
+        im, la, pn = a.get_batch(i * 16, (i + 1) * 16)
+        print(im.shape, la.shape, pn.shape)
+        print(pn)
         Image.fromarray(np.uint8(im[i].reshape((64, 64)))).show()
 
 
