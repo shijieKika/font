@@ -91,17 +91,17 @@ class FontModel:
                                              name='input_datas')
             self.input_label = tf.placeholder(tf.float32, shape=(batch_size, label_size), name='input_labels')
             self.input_loss_scale = tf.placeholder(tf.float32, shape=(batch_size), name='input_loss_scales')
-            # self.input_phase = tf.placeholder(tf.bool, name='input_phase')
+            self.input_phase = tf.placeholder(tf.bool, name='input_phase')
             self.dropout_prob = tf.placeholder(tf.float32, shape=())
 
-            logits = model2_conv(self.input_data, None, label_size, self.dropout_prob, device)
+            logits = model2_conv(self.input_data, self.input_phase, label_size, self.dropout_prob, device)
             self.prediction = tf.nn.softmax(logits)
             self.loss = tf.reduce_mean(
                 self.input_loss_scale * tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=self.input_label))
 
-            # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-            # with tf.control_dependencies(update_ops):
-            self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
 
     def get_accuracy(self, sess, datas, labels, loss_scales):
         data_count = loss_scales.shape[0]
@@ -116,7 +116,8 @@ class FontModel:
             batch_label = labels[end - self.batch_size:end]
             batch_loss_scale = loss_scales[end - self.batch_size:end]
             batch_predictions = sess.run(self.prediction,
-                                         feed_dict={self.input_data: batch_data, self.dropout_prob: 1.0})
+                                         feed_dict={self.input_data: batch_data, self.dropout_prob: 1.0,
+                                                    self.input_phase: 0})
             match_it = np.sum(np.argmax(batch_label, 1) == np.argmax(batch_predictions, 1))
             positive_match_it = np.sum(np.argmax(batch_label, 1) == np.argmax(batch_predictions, 1) * batch_loss_scale)
             positive_match_count += positive_match_it
@@ -132,7 +133,7 @@ class FontModel:
         input_feed[self.input_label] = batch_label
         input_feed[self.input_loss_scale] = batch_loss_scale
         input_feed[self.dropout_prob] = dropout_prob
-        # input_feed[self.input_phase] = 0 if only_forward else 1
+        input_feed[self.input_phase] = 0 if only_forward else 1
 
         output_feed = [self.loss, self.prediction]
         if only_forward == False:
