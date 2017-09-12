@@ -2,10 +2,11 @@
 
 ## 零、工程
 1. 完善模型的save、restore等逻辑
-2. tensorboard 的使用
 3. train accuracy,loss in all data *
 4. accuracy in tf *
 5. inference *
+6. train, valid, test *
+7. sec/batch *
 
 ## 一、数据预处理
 1. 八方向梯度特征 sobel算子
