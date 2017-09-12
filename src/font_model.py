@@ -62,16 +62,16 @@ def model_conv_base(device, data, label_size, dropout_prob):
 
 def model_conv_deep(device, data, label_size, dropout_prob):
     with tf.device(device):
-        conv1 = add_conv(data, 3, 3, 1, 100, 'conv1')
-        conv2 = add_conv(conv1, 2, 2, 100, 100, 'conv2')
+        conv1 = add_conv(data, 5, 5, 1, 100, 'conv1')
+        conv2 = add_conv(conv1, 3, 3, 100, 100, 'conv2')
         pool2 = tf.nn.max_pool(conv2, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
-        conv3 = add_conv(pool2, 3, 3, 100, 200, 'conv3')
-        conv4 = add_conv(conv3, 2, 2, 200, 200, 'conv4')
+        conv3 = add_conv(pool2, 5, 5, 100, 200, 'conv3')
+        conv4 = add_conv(conv3, 3, 3, 200, 200, 'conv4')
         pool4 = tf.nn.max_pool(conv4, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
-        conv5 = add_conv(pool4, 3, 3, 200, 300, 'conv5')
-        conv6 = add_conv(conv5, 2, 2, 300, 400, 'conv6')
+        conv5 = add_conv(pool4, 5, 5, 200, 300, 'conv5')
+        conv6 = add_conv(conv5, 3, 3, 300, 400, 'conv6')
         pool6 = tf.nn.max_pool(conv6, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
         conv7 = add_conv(pool6, 3, 3, 400, 500, 'conv7')
         pool7 = tf.nn.max_pool(conv7, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
@@ -124,16 +124,18 @@ class FontModel:
             self.dropout_prob = tf.placeholder(tf.float32, shape=())
 
             # logits = model_conv_base(device, self.input_data, label_size, self.dropout_prob)
-            # logits = model_conv_deep(device, self.input_data, label_size, self.dropout_prob)
-            logits = model_conv_bn(device, self.input_data, label_size, self.input_phase)
+            logits = model_conv_deep(device, self.input_data, label_size, self.dropout_prob)
+            # logits = model_conv_bn(device, self.input_data, label_size, self.input_phase)
 
             self.prediction = tf.nn.softmax(logits)
-            self.loss = tf.reduce_mean(
-                self.input_loss_scale * tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=self.input_label))
+            self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=self.input_label))
 
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-            with tf.control_dependencies(update_ops):
-                self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
+            # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            # with tf.control_dependencies(update_ops):
+            #     var_list = tf.trainable_variables()
+            #     grad_list = tf.gradients(ys=self.loss, xs=var_list)
+            #     self.optimizer = tf.train.AdamOptimizer().apply_gradients(zip(grad_list, var_list), name='train')
+            self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
 
     def get_accuracy(self, sess, datas, labels, loss_scales):
         data_count = loss_scales.shape[0]
