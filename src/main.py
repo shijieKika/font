@@ -114,7 +114,7 @@ if __name__ == '__main__':
     parser.add_argument("--image_channel", type=int, default=1)
     parser.add_argument("--image_edge", type=int, default=2)
     parser.add_argument("--gpu_fraction", type=float, default=0.50)
-    parser.add_argument("--starter_learning_rate", type=float, default=0.02)
+    parser.add_argument("--starter_learning_rate", type=float, default=0.002)
     parser.add_argument("--decay_steps", type=float, default=350)
     parser.add_argument("--decay_rate", type=float, default=0.96)
 
