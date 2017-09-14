@@ -110,16 +110,16 @@ def model_conv_deep(device, data, label_size, dropout_prob):
 
 def model_conv_bn(device, data, label_size, phase):
     with tf.device(device):
-        conv1 = add_conv_bn(data, phase, 5, 5, 1, 128, 'conv1')
-        conv2 = add_conv_bn(conv1, phase, 3, 3, 128, 128, 'conv2')
+        conv1 = add_conv_bn(data, phase, 5, 5, 1, 64, 'conv1')
+        conv2 = add_conv_bn(conv1, phase, 3, 3, 64, 128, 'conv2')
         pool2 = tf.nn.max_pool(conv2, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
-        conv3 = add_conv_bn(pool2, phase, 5, 5, 128, 256, 'conv3')
-        conv4 = add_conv_bn(conv3, phase, 3, 3, 256, 256, 'conv4')
+        conv3 = add_conv_bn(pool2, phase, 3, 3, 128, 256, 'conv3')
+        conv4 = add_conv_bn(conv3, phase, 2, 2, 256, 256, 'conv4')
         pool4 = tf.nn.max_pool(conv4, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
-        conv5 = add_conv_bn(pool4, phase, 5, 5, 256, 512, 'conv5')
-        conv6 = add_conv_bn(conv5, phase, 3, 3, 512, 512, 'conv6')
+        conv5 = add_conv_bn(pool4, phase, 3, 3, 256, 512, 'conv5')
+        conv6 = add_conv_bn(conv5, phase, 2, 2, 512, 512, 'conv6')
         pool6 = tf.nn.max_pool(conv6, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
         conv7 = add_conv_bn(pool6, phase, 3, 3, 512, 512, 'conv7')
         pool7 = tf.nn.max_pool(conv7, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
