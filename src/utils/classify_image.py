@@ -61,13 +61,6 @@ def filter_data(src_path, radio=0.1):
 
 
 def main():
-    # traversal_data('/Users/msj/Code/font/data/debug_data/negative_data',
-    #                '/Users/msj/Code/font/data/debug_data/negative_train',
-    #                '/Users/msj/Code/font/data/debug_data/negative_valid')
-
-    # traversal_data('/home/mashijie/data/training_data/negative_data',
-    #                '/home/mashijie/data/training_data/negative_train', '../../data/debug_data/negative_valid')
-
     traversal_data(FLAGS.data_dir, FLAGS.train_dir, FLAGS.test_dir, FLAGS.radio)
 
 

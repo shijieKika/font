@@ -78,9 +78,9 @@ def model_conv_base_bn(device, data, label_size, dropout_prob, phase):
         reshape = tf.reshape(pool4, [p4_shape[0], dims])
 
         local5 = add_full(reshape, dims, 500, tf.nn.relu, 'local5')
-        local5_dropout = tf.nn.dropout(local5, dropout_prob)
+        # local5_dropout = tf.nn.dropout(local5, dropout_prob)
 
-        local6 = add_full(local5_dropout, 500, label_size, None, 'local6')
+        local6 = add_full(local5, 500, label_size, None, 'local6')
         return local6
 
 
@@ -152,8 +152,8 @@ class FontModel:
             self.dropout_prob = tf.placeholder(tf.float32, shape=())
 
             # logits = model_conv_base(device, self.input_data, label_size, self.dropout_prob)
-            # logits = model_conv_base_bn(device, self.input_data, label_size, self.dropout_prob, self.input_phase)
-            logits = model_conv_deep(device, self.input_data, label_size, self.dropout_prob)
+            logits = model_conv_base_bn(device, self.input_data, label_size, self.dropout_prob, self.input_phase)
+            # logits = model_conv_deep(device, self.input_data, label_size, self.dropout_prob)
             # logits = model_conv_bn(device, self.input_data, label_size, self.input_phase)
 
             self.prediction = tf.nn.softmax(logits)
@@ -165,9 +165,9 @@ class FontModel:
             self.learning_rate = tf.train.exponential_decay(starter_learning_rate, self.global_step,
                                                             decay_steps, decay_rate, staircase=True)
 
-            # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-            # with tf.control_dependencies(update_ops):
-            self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss,
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss,
                                                                                       global_step=self.global_step)
 
     def build_graph(self, sess, checkpoint_dir):
