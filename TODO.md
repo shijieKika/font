@@ -3,7 +3,6 @@
 ## 零、工程
 1. 完善模型的save、restore等逻辑
 3. train accuracy,loss in all data *
-4. accuracy in tf *
 5. inference *
 6. train, valid, test *
 7. sec/batch *
@@ -17,14 +16,13 @@
 1. network in network
 3. 调整 dropout
 4. ResNet, Inception
-5. 减少全连接层,增加卷积层
-6. Batch Normalization *
+6. ***Batch Normalization***
 
 ## 三、训练
 1. 利用mnist进行预训练获得初识参数
 2. 损失函数增加正则项
-4. 尝试不同优化器
-5. 负例 -1 loss *
+5. 负例 -1 loss ? *
+
 
 ## Done
 1. 将所有 Op 抽象出类，使得 train、inference、test 等过程与main分离
@@ -35,3 +33,5 @@
 6. 每个epoch做一次accuracy，平时只打印 loss
 7. 每epoch后shuffle
 6. 准确率 正例、负例都进行统计
+7. accuracy in tf
+6. learning rate decay
