@@ -37,10 +37,8 @@ def train():
         model = FontModel(FLAGS.batch_size, FLAGS.image_size, FLAGS.image_channel, train_data_gallery.label_size(),
                           FLAGS.starter_learning_rate, FLAGS.decay_steps, FLAGS.decay_rate, device)
 
-        saver = tf.train.Saver()
-
         with tf.Session(config=config) as sess:
-            tf.global_variables_initializer().run()
+            model.build_graph(sess, None)
             print("Run with: %s" % device)
             print("\tbatch_size: %d" % batch_size)
             print("\tepoch_size: %d" % FLAGS.epoch_size)
@@ -62,9 +60,10 @@ def train():
 
                     if global_step % FLAGS.steps_per_checkpoint == 0:
                         if FLAGS.checkpoint_dir != 'None':
-                            saver.save(sess, os.path.join(FLAGS.checkpoint_dir, 'font_model'), global_step=global_step)
+                            model.save(sess, os.path.join(FLAGS.checkpoint_dir, 'font_model'))
 
-                        batch_loss, batch_accuracy, batch_rate, _ = model.step(sess, global_step, batch_data, batch_label, 1.0, True)
+                        batch_loss, batch_accuracy, batch_rate, _ = model.step(sess, global_step, batch_data,
+                                                                               batch_label, 1.0, True)
 
                         message = '%s, Step %d, MiniBatch loss: %.3f, MiniBatch positive accuracy: %02.2f %%, MiniBatch learning rate: %02.6f' % (
                             time.strftime('%X %x %Z'), global_step, batch_loss, 100 * batch_accuracy, batch_rate)
@@ -115,8 +114,8 @@ if __name__ == '__main__':
     parser.add_argument("--image_channel", type=int, default=1)
     parser.add_argument("--image_edge", type=int, default=2)
     parser.add_argument("--gpu_fraction", type=float, default=0.50)
-    parser.add_argument("--starter_learning_rate", type=float, default=0.01)
-    parser.add_argument("--decay_steps", type=float, default=120)
+    parser.add_argument("--starter_learning_rate", type=float, default=0.02)
+    parser.add_argument("--decay_steps", type=float, default=350)
     parser.add_argument("--decay_rate", type=float, default=0.96)
 
     FLAGS = parser.parse_args()

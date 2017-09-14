@@ -1,16 +1,13 @@
 # TO DO
 
 ## 零、工程
-1. 完善模型的save、restore等逻辑
-3. train accuracy,loss in all data *
+1. train accuracy,loss in all data *
 5. inference *
 6. train, valid, test *
 7. sec/batch *
-8. ***build graph***
 
 ## 一、数据预处理
 1. 八方向梯度特征 sobel算子
-2. 尝试不同分辨率：(64, 64), (96, 96)等
 3. 数据增广 random crop *
 
 ## 二、网络结构
@@ -20,7 +17,6 @@
 6. ***Batch Normalization***
 
 ## 三、训练
-1. 利用mnist进行预训练获得初识参数
 2. 损失函数增加正则项
 5. 负例 -1 loss ? *
 
@@ -36,3 +32,5 @@
 6. 准确率 正例、负例都进行统计
 7. accuracy in tf
 6. learning rate decay
+8. build graph
+1. 完善模型的save、restore等逻辑

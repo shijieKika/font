@@ -86,16 +86,16 @@ def model_conv_base_bn(device, data, label_size, dropout_prob, phase):
 
 def model_conv_deep(device, data, label_size, dropout_prob):
     with tf.device(device):
-        conv1 = add_conv(data, 5, 5, 1, 128, 'conv1')
-        conv2 = add_conv(conv1, 3, 3, 128, 128, 'conv2')
+        conv1 = add_conv(data, 5, 5, 1, 64, 'conv1')
+        conv2 = add_conv(conv1, 3, 3, 64, 128, 'conv2')
         pool2 = tf.nn.max_pool(conv2, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
-        conv3 = add_conv(pool2, 5, 5, 128, 256, 'conv3')
-        conv4 = add_conv(conv3, 3, 3, 256, 256, 'conv4')
+        conv3 = add_conv(pool2, 3, 3, 128, 256, 'conv3')
+        conv4 = add_conv(conv3, 2, 2, 256, 256, 'conv4')
         pool4 = tf.nn.max_pool(conv4, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
 
-        conv5 = add_conv(pool4, 5, 5, 256, 512, 'conv5')
-        conv6 = add_conv(conv5, 3, 3, 512, 512, 'conv6')
+        conv5 = add_conv(pool4, 3, 3, 256, 512, 'conv5')
+        conv6 = add_conv(conv5, 2, 2, 512, 512, 'conv6')
         pool6 = tf.nn.max_pool(conv6, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
         conv7 = add_conv(pool6, 3, 3, 512, 512, 'conv7')
         pool7 = tf.nn.max_pool(conv7, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME')
@@ -142,6 +142,7 @@ class FontModel:
                  decay_rate,
                  device):
         self.global_step = tf.Variable(0, trainable=False)
+        self.saver = tf.train.Saver(tf.global_variables())
         with tf.device(device):
             self.batch_size = batch_size
             self.input_data = tf.placeholder(tf.float32, shape=(batch_size, image_size, image_size, image_channel),
@@ -164,14 +165,26 @@ class FontModel:
             self.learning_rate = tf.train.exponential_decay(starter_learning_rate, self.global_step,
                                                             decay_steps, decay_rate, staircase=True)
 
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-            print(len(update_ops))
-            for i in update_ops:
-                print(i)
-
-            with tf.control_dependencies(update_ops):
-                self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss,
+            # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            # with tf.control_dependencies(update_ops):
+            self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss,
                                                                                       global_step=self.global_step)
+
+    def build_graph(self, sess, checkpoint_dir):
+        if checkpoint_dir is None:
+            print("Created model with fresh parameters.")
+            sess.run(tf.global_variables_initializer())
+            return
+        ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
+        if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
+            print("Reading model parameters from %s" % ckpt.model_checkpoint_path)
+            self.saver.restore(sess, ckpt.model_checkpoint_path)
+        else:
+            print("Created model with fresh parameters.")
+            sess.run(tf.global_variables_initializer())
+
+    def save(self, sess, checkpoint_dir):
+        self.saver.save(sess, checkpoint_dir, global_step=self.global_step)
 
     def get_accuracy(self, sess, datas, labels):
         data_count = labels.shape[0]
