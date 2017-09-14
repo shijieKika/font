@@ -141,6 +141,7 @@ class FontModel:
                  decay_steps,
                  decay_rate,
                  device):
+        self.global_step = tf.Variable(0, trainable=False)
         with tf.device(device):
             self.batch_size = batch_size
             self.input_data = tf.placeholder(tf.float32, shape=(batch_size, image_size, image_size, image_channel),
@@ -148,7 +149,6 @@ class FontModel:
             self.input_label = tf.placeholder(tf.float32, shape=(batch_size, label_size), name='input_labels')
             self.input_phase = tf.placeholder(tf.bool, name='input_phase')
             self.dropout_prob = tf.placeholder(tf.float32, shape=())
-            self.global_step = tf.Variable(0, trainable=False)
 
             # logits = model_conv_base(device, self.input_data, label_size, self.dropout_prob)
             # logits = model_conv_base_bn(device, self.input_data, label_size, self.dropout_prob, self.input_phase)

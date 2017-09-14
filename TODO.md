@@ -6,6 +6,7 @@
 5. inference *
 6. train, valid, test *
 7. sec/batch *
+8. ***build graph***
 
 ## 一、数据预处理
 1. 八方向梯度特征 sobel算子
