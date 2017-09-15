@@ -142,7 +142,6 @@ class FontModel:
                  decay_rate,
                  device):
         self.global_step = tf.Variable(0, trainable=False)
-        self.saver = tf.train.Saver(tf.global_variables())
         with tf.device(device):
             self.batch_size = batch_size
             self.input_data = tf.placeholder(tf.float32, shape=(batch_size, image_size, image_size, image_channel),
@@ -151,9 +150,9 @@ class FontModel:
             self.input_phase = tf.placeholder(tf.bool, name='input_phase')
             self.dropout_prob = tf.placeholder(tf.float32, shape=())
 
-            # logits = model_conv_base(device, self.input_data, label_size, self.dropout_prob)
+            logits = model_conv_base(device, self.input_data, label_size, self.dropout_prob)
             # logits = model_conv_base_bn(device, self.input_data, label_size, self.dropout_prob, self.input_phase)
-            logits = model_conv_deep(device, self.input_data, label_size, self.dropout_prob)
+            # logits = model_conv_deep(device, self.input_data, label_size, self.dropout_prob)
             # logits = model_conv_bn(device, self.input_data, label_size, self.input_phase)
 
             self.prediction = tf.nn.softmax(logits)
@@ -169,19 +168,6 @@ class FontModel:
             with tf.control_dependencies(update_ops):
                 self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss,
                                                                                                    global_step=self.global_step)
-
-    def build_graph(self, sess, checkpoint_dir):
-        if checkpoint_dir is None:
-            print("Created model with fresh parameters.")
-            sess.run(tf.global_variables_initializer())
-            return
-        ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
-        if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
-            print("Reading model parameters from %s" % ckpt.model_checkpoint_path)
-            self.saver.restore(sess, ckpt.model_checkpoint_path)
-        else:
-            print("Created model with fresh parameters.")
-            sess.run(tf.global_variables_initializer())
 
     def step(self, sess, batch_data, batch_label, dropout_prob, only_forward):
         input_feed = {}

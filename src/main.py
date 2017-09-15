@@ -3,6 +3,7 @@
 import os
 import time
 import argparse
+import shutil
 import numpy as np
 import tensorflow as tf
 from utils.load_image import ImageGallery
@@ -26,22 +27,14 @@ def model_evaluate(sess, model, datas, labels):
 
     return total_loss / step_size, total_accuracy / step_size
 
-
-def model_evaluate2(sess, model, datas, labels):
-    data_count = labels.shape[0]
-    match_count = 0.0
-
-    for end in range(model.batch_size, data_count + 1, model.batch_size):
-        batch_data = datas[end - model.batch_size:end]
-        batch_label = labels[end - model.batch_size:end]
-        batch_predictions = sess.run(model.prediction,
-                                     feed_dict={model.input_data: batch_data, model.dropout_prob: 1.0,
-                                                model.input_phase: False})
-        match_it = np.sum(np.argmax(batch_label, 1) == np.argmax(batch_predictions, 1))
-        match_count += match_it
-
-    p = 0 if data_count == 0 else match_count / (data_count - data_count % model.batch_size)
-    return p
+def build_graph(sess, saver, path):
+    ckpt = tf.train.get_checkpoint_state(path)
+    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
+        print("restore")
+        saver.restore(sess, ckpt.model_checkpoint_path)
+    else:
+        print("init")
+        sess.run(tf.global_variables_initializer())
 
 
 def train():
@@ -54,7 +47,7 @@ def train():
         config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_fraction if FLAGS.gpu else 0.01
 
         batch_size = FLAGS.batch_size
-        train_data_gallery = ImageGallery(FLAGS.train_positive_dir, FLAGS.chinese_dict_dir, FLAGS.image_size,
+        train_data_gallery = ImageGallery(FLAGS.data_dir, FLAGS.chinese_dict_dir, FLAGS.image_size,
                                           FLAGS.image_channel, FLAGS.image_edge)
 
         valid_positive_gallery = ImageGallery(FLAGS.valid_positive_dir, FLAGS.chinese_dict_dir, FLAGS.image_size,
@@ -70,12 +63,14 @@ def train():
         model = FontModel(FLAGS.batch_size, FLAGS.image_size, FLAGS.image_channel, train_data_gallery.label_size(),
                           FLAGS.starter_learning_rate, FLAGS.decay_steps, FLAGS.decay_rate, device)
 
+        saver = tf.train.Saver(max_to_keep = 2)
         with tf.Session(config=config) as sess:
-            model.build_graph(sess, None)
+            build_graph(sess, saver, FLAGS.checkpoint_dir)
+
             print("Run with: %s" % device)
             print("\tbatch_size: %d" % batch_size)
             print("\tepoch_size: %d" % FLAGS.epoch_size)
-            print("\ttrain_positive_dir: %s, size %d" % (FLAGS.train_positive_dir, train_data_gallery.size()))
+            print("\ttrain_data_dir: %s, size %d" % (FLAGS.data_dir, train_data_gallery.size()))
             print("\tvalid_positive_dir: %s, size %d" % (FLAGS.valid_positive_dir, valid_positive_gallery.size()))
             print("\tvalid_negative_dir: %s, size %d" % (FLAGS.valid_negative_dir, valid_negative_gallery.size()))
             print("\tcheckpoint_dir: %s, steps_per_checkpoint: %d" % (FLAGS.checkpoint_dir, FLAGS.steps_per_checkpoint))
@@ -86,20 +81,18 @@ def train():
             for epoch_step in range(FLAGS.epoch_size):
                 train_data_gallery.shuffle()
                 for step in range(step_size):
-                    global_step = sess.run(model.global_step)
-                    batch_data, batch_label = train_data_gallery.get_batch(step * batch_size,
-                                                                           (step + 1) * batch_size)
+                    _, batch_data, batch_label = train_data_gallery.get_batch(step * batch_size,
+                                                                              (step + 1) * batch_size)
                     _ = model.step(sess, batch_data, batch_label, FLAGS.dropout_prob,
                                    only_forward=False)
+                    global_step = sess.run(model.global_step)
 
                     if global_step % FLAGS.steps_per_checkpoint == 0:
-                        if FLAGS.checkpoint_dir != 'None':
-                            # model.save(sess, os.path.join(FLAGS.checkpoint_dir, 'font_model'))
-                            model.saver.save(sess, os.path.join(FLAGS.checkpoint_dir, 'font_model'),
-                                             global_step=model.global_step)
+                        if FLAGS.checkpoint_dir is not None:
+                            saver.save(sess, os.path.join(FLAGS.checkpoint_dir, 'font_model'), global_step=global_step)
 
-                        batch_data, batch_label = train_data_gallery.get_batch((step + 1) * batch_size,
-                                                                               (step + 2) * batch_size)
+                        _, batch_data, batch_label = train_data_gallery.get_batch((step + 1) * batch_size,
+                                                                                  (step + 2) * batch_size)
                         batch_loss, batch_accuracy, batch_rate, _ = model.step(sess, batch_data,
                                                                                batch_label, 1.0, True)
 
@@ -109,8 +102,8 @@ def train():
 
                 valid_positive_gallery.shuffle()
                 valid_negative_gallery.shuffle()
-                valid_datas, valid_labels = valid_positive_gallery.get_batch(None, None)
-                valid_negative_datas, valid_negative_labels = valid_negative_gallery.get_batch(None, None)
+                _, valid_datas, valid_labels = valid_positive_gallery.get_batch(None, None)
+                _, valid_negative_datas, valid_negative_labels = valid_negative_gallery.get_batch(None, None)
 
                 positive_valid_loss, positive_valid_accuracy = model_evaluate(sess, model, valid_datas, valid_labels)
                 _, negative_valid_accuracy = model_evaluate(sess, model, valid_negative_datas, valid_negative_labels)
@@ -126,7 +119,46 @@ def test():
 
 
 def inference():
-    print('To inference in future')
+    graph = tf.Graph()
+    with graph.as_default():
+        print("Init")
+        device = '/gpu:0' if FLAGS.gpu else '/cpu:0'
+        config = tf.ConfigProto()
+        config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_fraction if FLAGS.gpu else 0.01
+
+        batch_size = 1
+        data_gallery = ImageGallery(FLAGS.data_dir, FLAGS.chinese_dict_dir, FLAGS.image_size,
+                                    FLAGS.image_channel, FLAGS.image_edge)
+
+        model = FontModel(batch_size, FLAGS.image_size, FLAGS.image_channel, data_gallery.label_size(),
+                          FLAGS.starter_learning_rate, FLAGS.decay_steps, FLAGS.decay_rate, device)
+        saver = tf.train.Saver()
+        with tf.Session(config=config) as sess:
+            build_graph(sess, saver, FLAGS.checkpoint_dir)
+            print("Run with: %s" % device)
+            print("\tdata_dir: %s, size %d" % (FLAGS.data_dir, data_gallery.size()))
+            print("\tcheckpoint_dir: %s" % (FLAGS.checkpoint_dir))
+
+            step_size = data_gallery.size()
+            total_accuracy = 0.0
+            for step in range(step_size):
+                temp_path, temp_data, temp_label = data_gallery.get_batch(step, step + batch_size)
+                _, temp_accuracy, _, temp_prediction = model.step(sess, temp_data, temp_label, 1.0, True)
+                total_accuracy += temp_accuracy
+                is_match = (np.argmax(temp_label) == np.argmax(temp_prediction))
+                _, sub_dir = os.path.split(os.path.split(temp_path[0])[0])
+                if is_match:
+                    abs_dir = os.path.join(FLAGS.right_dir, sub_dir)
+                    if os.path.isdir(abs_dir) == False:
+                        os.mkdir(abs_dir)
+                    shutil.copy(temp_path[0], abs_dir)
+                else:
+                    abs_dir = os.path.join(FLAGS.wrong_dir, sub_dir)
+                    if os.path.isdir(abs_dir) == False:
+                        os.mkdir(abs_dir)
+                    shutil.copy(temp_path[0], abs_dir)
+                    shutil.copy(temp_path[0], abs_dir)
+            print("Total accuracy: %02.2f" % (total_accuracy / step_size))
 
 
 if __name__ == '__main__':
@@ -136,12 +168,17 @@ if __name__ == '__main__':
     parser.add_argument("--train", action='store_true')
     parser.add_argument("--inference", action='store_true')
 
-    parser.add_argument("--train_positive_dir", help="Need positive train dir")
-    parser.add_argument("--train_negative_dir", help="Need negative train dir", default=None)
-    parser.add_argument("--valid_positive_dir", help="Need positive valid dir")
-    parser.add_argument("--valid_negative_dir", help="Need negative valid dir")
-    parser.add_argument("--checkpoint_dir", default='None', help="Need checkpoint dir")
+    parser.add_argument("--data_dir", help="Need data dir")
     parser.add_argument("--chinese_dict_dir", help="Need chinese dict dir")
+    parser.add_argument("--checkpoint_dir", help="Need checkpoint dir", default=None)
+
+    # for train
+    parser.add_argument("--valid_positive_dir", help="Need positive valid dir", default=None)
+    parser.add_argument("--valid_negative_dir", help="Need negative valid dir", default=None)
+
+    # for inference
+    parser.add_argument("--right_dir", help="Need right dir", default=None)
+    parser.add_argument("--wrong_dir", help="Need wrong dir", default=None)
 
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--epoch_size", type=int, default=20)

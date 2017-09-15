@@ -87,7 +87,7 @@ class ImageGallery:
                 font_list.append(image_array)
                 label_list.append(label)
 
-        return np.array(font_list, dtype=np.float32), np.array(label_list, dtype=np.float32)
+        return batch_path, np.array(font_list, dtype=np.float32), np.array(label_list, dtype=np.float32)
 
     def convert_raw_to_array(self, file_path, bin_pro):
         raw_photo = np.array(Image.open(file_path))

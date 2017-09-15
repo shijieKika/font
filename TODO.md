@@ -1,14 +1,14 @@
 # TO DO
 
 ## 零、工程
-1. train accuracy,loss in all data *
-5. inference *
+1. inference *
 6. train, valid, test *
 8. device *
 
 ## 一、数据预处理
 1. 八方向梯度特征 sobel算子
 3. 数据增广 random crop *
+3. train, valid, test切分，划出一个新的字体
 
 ## 二、网络结构
 1. network in network
@@ -18,7 +18,7 @@
 
 ## 三、训练
 2. 损失函数增加正则项
-5. 负例 -1 loss ? *
+5. 负例 如何使用 ? *
 
 
 ## Done
