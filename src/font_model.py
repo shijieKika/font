@@ -150,9 +150,9 @@ class FontModel:
             self.input_phase = tf.placeholder(tf.bool, name='input_phase')
             self.dropout_prob = tf.placeholder(tf.float32, shape=())
 
-            logits = model_conv_base(device, self.input_data, label_size, self.dropout_prob)
+            # logits = model_conv_base(device, self.input_data, label_size, self.dropout_prob)
             # logits = model_conv_base_bn(device, self.input_data, label_size, self.dropout_prob, self.input_phase)
-            # logits = model_conv_deep(device, self.input_data, label_size, self.dropout_prob)
+            logits = model_conv_deep(device, self.input_data, label_size, self.dropout_prob)
             # logits = model_conv_bn(device, self.input_data, label_size, self.input_phase)
 
             self.prediction = tf.nn.softmax(logits)
