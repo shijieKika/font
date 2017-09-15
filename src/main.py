@@ -181,7 +181,7 @@ if __name__ == '__main__':
     parser.add_argument("--wrong_dir", help="Need wrong dir", default=None)
 
     parser.add_argument("--batch_size", type=int, default=128)
-    parser.add_argument("--epoch_size", type=int, default=20)
+    parser.add_argument("--epoch_size", type=int, default=25)
     parser.add_argument("--steps_per_checkpoint", type=int, default=100)
     parser.add_argument("--dropout_prob", type=float, default=0.5)
 
