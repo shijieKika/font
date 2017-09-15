@@ -11,6 +11,39 @@ from font_model import FontModel
 FLAGS = None
 
 
+def model_evaluate(sess, model, datas, labels):
+    data_count = labels.shape[0]
+    step_size = data_count / model.batch_size
+    total_loss = 0.0
+    total_accuracy = 0.0
+
+    for end in range(model.batch_size, data_count + 1, model.batch_size):
+        batch_data = datas[end - model.batch_size:end]
+        batch_label = labels[end - model.batch_size:end]
+        batch_loss, batch_accuracy, _, _ = model.step(sess, batch_data, batch_label, 1.0, True)
+        total_loss += batch_loss
+        total_accuracy += batch_accuracy
+
+    return total_loss / step_size, total_accuracy / step_size
+
+
+def model_evaluate2(sess, model, datas, labels):
+    data_count = labels.shape[0]
+    match_count = 0.0
+
+    for end in range(model.batch_size, data_count + 1, model.batch_size):
+        batch_data = datas[end - model.batch_size:end]
+        batch_label = labels[end - model.batch_size:end]
+        batch_predictions = sess.run(model.prediction,
+                                     feed_dict={model.input_data: batch_data, model.dropout_prob: 1.0,
+                                                model.input_phase: False})
+        match_it = np.sum(np.argmax(batch_label, 1) == np.argmax(batch_predictions, 1))
+        match_count += match_it
+
+    p = 0 if data_count == 0 else match_count / (data_count - data_count % model.batch_size)
+    return p
+
+
 def train():
     graph = tf.Graph()
 
@@ -46,39 +79,45 @@ def train():
             print("\tvalid_positive_dir: %s, size %d" % (FLAGS.valid_positive_dir, valid_positive_gallery.size()))
             print("\tvalid_negative_dir: %s, size %d" % (FLAGS.valid_negative_dir, valid_negative_gallery.size()))
             print("\tcheckpoint_dir: %s, steps_per_checkpoint: %d" % (FLAGS.checkpoint_dir, FLAGS.steps_per_checkpoint))
-            print("\tchinese_dict_dir: %s" % FLAGS.chinese_dict_dir)
+            print("\tstarter_learning_rate: %.6f, decay_steps: %d, decay_rate: %.6f" % (
+                FLAGS.starter_learning_rate, FLAGS.decay_steps, FLAGS.decay_rate))
 
-            global_step = 0
             step_size = train_data_gallery.size() / batch_size
             for epoch_step in range(FLAGS.epoch_size):
                 train_data_gallery.shuffle()
                 for step in range(step_size):
+                    global_step = sess.run(model.global_step)
                     batch_data, batch_label = train_data_gallery.get_batch(step * batch_size,
                                                                            (step + 1) * batch_size)
-                    _ = model.step(sess, global_step, batch_data, batch_label, FLAGS.dropout_prob,
+                    _ = model.step(sess, batch_data, batch_label, FLAGS.dropout_prob,
                                    only_forward=False)
 
                     if global_step % FLAGS.steps_per_checkpoint == 0:
                         if FLAGS.checkpoint_dir != 'None':
-                            model.save(sess, os.path.join(FLAGS.checkpoint_dir, 'font_model'))
+                            # model.save(sess, os.path.join(FLAGS.checkpoint_dir, 'font_model'))
+                            model.saver.save(sess, os.path.join(FLAGS.checkpoint_dir, 'font_model'),
+                                             global_step=model.global_step)
 
-                        batch_loss, batch_accuracy, batch_rate, _ = model.step(sess, global_step, batch_data,
+                        batch_data, batch_label = train_data_gallery.get_batch((step + 1) * batch_size,
+                                                                               (step + 2) * batch_size)
+                        batch_loss, batch_accuracy, batch_rate, _ = model.step(sess, batch_data,
                                                                                batch_label, 1.0, True)
 
-                        message = '%s, Step %d, MiniBatch loss: %.3f, MiniBatch positive accuracy: %02.2f %%, MiniBatch learning rate: %02.6f' % (
+                        message = '%s, Step %d, MiniBatch loss: %.6f, MiniBatch positive accuracy: %02.2f %%, MiniBatch learning rate: %.6f' % (
                             time.strftime('%X %x %Z'), global_step, batch_loss, 100 * batch_accuracy, batch_rate)
                         print(message)
-                    global_step += 1
 
                 valid_positive_gallery.shuffle()
                 valid_negative_gallery.shuffle()
                 valid_datas, valid_labels = valid_positive_gallery.get_batch(None, None)
                 valid_negative_datas, valid_negative_labels = valid_negative_gallery.get_batch(None, None)
-                positive_valid_accuracy = model.get_accuracy(sess, valid_datas, valid_labels)
-                negative_valid_accuracy = 100 - model.get_accuracy(sess, valid_negative_datas, valid_negative_labels)
 
-                message = '%s, Epoch %d, Validation positive accuracy %02.2f %%, negative accuracy %02.2f %%' % (
-                    time.strftime('%X %x %Z'), epoch_step + 1, positive_valid_accuracy, negative_valid_accuracy)
+                positive_valid_loss, positive_valid_accuracy = model_evaluate(sess, model, valid_datas, valid_labels)
+                _, negative_valid_accuracy = model_evaluate(sess, model, valid_negative_datas, valid_negative_labels)
+
+                message = '%s, Epoch %d, Validation positive loss %.6f, accuracy %02.2f %%, negative accuracy %02.2f %%' % (
+                    time.strftime('%X %x %Z'), epoch_step + 1, positive_valid_loss, 100 * positive_valid_accuracy,
+                    100 - 100 * negative_valid_accuracy)
                 print(message)
 
 
@@ -115,7 +154,7 @@ if __name__ == '__main__':
     parser.add_argument("--image_edge", type=int, default=2)
     parser.add_argument("--gpu_fraction", type=float, default=0.50)
     parser.add_argument("--starter_learning_rate", type=float, default=0.002)
-    parser.add_argument("--decay_steps", type=float, default=350)
+    parser.add_argument("--decay_steps", type=float, default=500)
     parser.add_argument("--decay_rate", type=float, default=0.96)
 
     FLAGS = parser.parse_args()

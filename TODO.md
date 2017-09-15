@@ -4,7 +4,6 @@
 1. train accuracy,loss in all data *
 5. inference *
 6. train, valid, test *
-7. sec/batch *
 8. device *
 
 ## 一、数据预处理
@@ -35,3 +34,5 @@
 6. learning rate decay
 8. build graph
 1. 完善模型的save、restore等逻辑
+9. delete global_step int
+10. delete func save get_accuracy

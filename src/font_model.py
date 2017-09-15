@@ -152,8 +152,8 @@ class FontModel:
             self.dropout_prob = tf.placeholder(tf.float32, shape=())
 
             # logits = model_conv_base(device, self.input_data, label_size, self.dropout_prob)
-            logits = model_conv_base_bn(device, self.input_data, label_size, self.dropout_prob, self.input_phase)
-            # logits = model_conv_deep(device, self.input_data, label_size, self.dropout_prob)
+            # logits = model_conv_base_bn(device, self.input_data, label_size, self.dropout_prob, self.input_phase)
+            logits = model_conv_deep(device, self.input_data, label_size, self.dropout_prob)
             # logits = model_conv_bn(device, self.input_data, label_size, self.input_phase)
 
             self.prediction = tf.nn.softmax(logits)
@@ -168,7 +168,7 @@ class FontModel:
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
                 self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss,
-                                                                                      global_step=self.global_step)
+                                                                                                   global_step=self.global_step)
 
     def build_graph(self, sess, checkpoint_dir):
         if checkpoint_dir is None:
@@ -183,27 +183,7 @@ class FontModel:
             print("Created model with fresh parameters.")
             sess.run(tf.global_variables_initializer())
 
-    def save(self, sess, checkpoint_dir):
-        self.saver.save(sess, checkpoint_dir, global_step=self.global_step)
-
-    def get_accuracy(self, sess, datas, labels):
-        data_count = labels.shape[0]
-        match_count = 0.0
-
-        for end in range(self.batch_size, data_count + 1, self.batch_size):
-            batch_data = datas[end - self.batch_size:end]
-            batch_label = labels[end - self.batch_size:end]
-            batch_predictions = sess.run(self.prediction,
-                                         feed_dict={self.input_data: batch_data, self.dropout_prob: 1.0,
-                                                    self.input_phase: False})
-            match_it = np.sum(np.argmax(batch_label, 1) == np.argmax(batch_predictions, 1))
-            match_count += match_it
-
-        p = 0 if data_count == 0 else 100 * match_count / data_count
-        return p
-
-    def step(self, sess, global_step, batch_data, batch_label, dropout_prob, only_forward):
-        self.global_step = global_step
+    def step(self, sess, batch_data, batch_label, dropout_prob, only_forward):
         input_feed = {}
         input_feed[self.input_data] = batch_data
         input_feed[self.input_label] = batch_label
