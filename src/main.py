@@ -30,10 +30,10 @@ def model_evaluate(sess, model, datas, labels):
 def build_graph(sess, saver, path):
     ckpt = tf.train.get_checkpoint_state(path)
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
-        print("restore")
+        print("Reading model parameters from %s" % ckpt.model_checkpoint_path)
         saver.restore(sess, ckpt.model_checkpoint_path)
     else:
-        print("init")
+        print("Created model with fresh patameters")
         sess.run(tf.global_variables_initializer())
 
 
