@@ -1,24 +1,22 @@
 # TO DO
 
 ## 零、工程
-1. inference *
-6. train, valid, test *
-8. device *
+1. 指定device *
 
 ## 一、数据预处理
 1. 八方向梯度特征 sobel算子
-3. 数据增广 random crop *
+2. 数据增广 random crop *
 3. train, valid, test切分，划出一个新的字体
 
 ## 二、网络结构
 1. network in network
-3. 调整 dropout
-4. ResNet, Inception
-6. ***Batch Normalization***
+2. 调整 dropout
+3. ResNet, Inception
+4. ***Batch Normalization***
 
 ## 三、训练
-2. 损失函数增加正则项
-5. 负例 如何使用 ? *
+1. 损失函数增加正则项
+2. 负例 使用 *
 
 
 ## Done
@@ -29,10 +27,11 @@
 5. 减少pooling数量，卷积3 * 3
 6. 每个epoch做一次accuracy，平时只打印 loss
 7. 每epoch后shuffle
-6. 准确率 正例、负例都进行统计
-7. accuracy in tf
-6. learning rate decay
-8. build graph
-1. 完善模型的save、restore等逻辑
-9. delete global_step int
-10. delete func save get_accuracy
+8. 准确率 正例、负例都进行统计
+9. accuracy in tf
+10. learning rate decay
+11. build graph
+12. 完善模型的save、restore等逻辑
+13. delete global_step int
+14. delete func save get_accuracy
+15. inference
