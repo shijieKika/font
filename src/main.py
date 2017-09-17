@@ -68,7 +68,7 @@ def train():
 
         saver = tf.train.Saver(max_to_keep=2)
         with tf.Session(config=config) as sess:
-            build_graph(sess, saver, FLAGS.checkpoint_dir)
+            build_graph(sess, saver, None)
             print("Run in: %s" % device)
             print("\tbatch_size: %d" % batch_size)
             print("\tepoch_size: %d" % FLAGS.epoch_size)

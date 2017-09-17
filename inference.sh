@@ -5,4 +5,4 @@ python2 -u src/main.py --gpu --inference \
                              --right_dir "/mnt/mashijie/inference/right_data" \
                              --wrong_dir "/mnt/mashijie/inference/wrong_data" \
                              --checkpoint_dir "/mnt/mashijie/checkpoint" \
-                             --chinese_dict_dir "/home/mashijie/font/static/chinese.dict"
+                             --chinese_dict_dir "./static/chinese.dict"
