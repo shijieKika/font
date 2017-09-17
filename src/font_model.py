@@ -59,7 +59,7 @@ def model_conv_base(device, data, label_size, dropout_prob):
         return local6
 
 
-def model_conv_base_bn(device, data, label_size, dropout_prob, phase):
+def model_conv_base_bn(device, data, label_size, phase):
     with tf.device(device):
         conv1 = add_conv_bn(data, phase, 3, 3, 1, 100, 'conv1')
         pool1 = tf.nn.max_pool(conv1, [1, 2, 2, 1], [1, 2, 2, 1], padding='SAME', name='pool1')
@@ -78,7 +78,6 @@ def model_conv_base_bn(device, data, label_size, dropout_prob, phase):
         reshape = tf.reshape(pool4, [p4_shape[0], dims])
 
         local5 = add_full(reshape, dims, 500, tf.nn.relu, 'local5')
-        # local5_dropout = tf.nn.dropout(local5, dropout_prob)
 
         local6 = add_full(local5, 500, label_size, None, 'local6')
         return local6

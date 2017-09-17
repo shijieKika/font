@@ -29,16 +29,15 @@ def model_evaluate(sess, model, datas, labels):
 
 
 def build_graph(sess, saver, path):
-    if path is None:
-        print("Created model with fresh patameters")
-        sess.run(tf.global_variables_initializer())
-    ckpt = tf.train.get_checkpoint_state(path)
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
-        print("Reading model parameters from %s" % ckpt.model_checkpoint_path)
-        saver.restore(sess, ckpt.model_checkpoint_path)
-    else:
-        print("Created model with fresh patameters")
-        sess.run(tf.global_variables_initializer())
+    if path is not None:
+        ckpt = tf.train.get_checkpoint_state(path)
+        if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
+            print("Reading model parameters from %s" % ckpt.model_checkpoint_path)
+            saver.restore(sess, ckpt.model_checkpoint_path)
+            return
+    print("Created model with fresh patameters")
+    sess.run(tf.global_variables_initializer())
+    return
 
 
 def train():
@@ -70,8 +69,7 @@ def train():
         saver = tf.train.Saver(max_to_keep=2)
         with tf.Session(config=config) as sess:
             build_graph(sess, saver, FLAGS.checkpoint_dir)
-
-            print("Run with: %s" % device)
+            print("Run in: %s" % device)
             print("\tbatch_size: %d" % batch_size)
             print("\tepoch_size: %d" % FLAGS.epoch_size)
             print("\ttrain_data_dir: %s, size %d" % (FLAGS.data_dir, train_data_gallery.size()))
@@ -142,6 +140,8 @@ def infer():
             print("Run with: %s" % device)
             print("\tdata_dir: %s, size %d" % (FLAGS.data_dir, data_gallery.size()))
             print("\tcheckpoint_dir: %s" % (FLAGS.checkpoint_dir))
+            print("\tright data in %s" % (FLAGS.right_dir))
+            print("\twrong data in %s" % (FLAGS.wrong_dir))
 
             step_size = data_gallery.size()
             total_accuracy = 0.0
