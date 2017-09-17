@@ -156,7 +156,7 @@ def inference():
                 shutil.copy(temp_path[0], dst_dir)
                 if is_match == False:
                     os.rename(os.path.join(dst_dir, font_name),
-                              os.path.join(dst_dir, '(' + data_gallery.get_word(temp_prediction[0]) + ')' + font_name))
+                              os.path.join(dst_dir, '(' + data_gallery.get_word(np.argmax(temp_prediction)) + ')' + font_name))
 
             print("Total accuracy: %02.2f %%" % (total_accuracy / step_size * 100))
 
