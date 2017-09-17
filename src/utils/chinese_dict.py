@@ -18,13 +18,13 @@ class ChineseDict:
     def size(self):
         return len(self.list_)
 
-    def getWord(self, i):
+    def get_word(self, i):
         if i >= 0 and i < len(self.list_):
             return self.list_[i]
         else:
             return None
 
-    def getIndex(self, word):
+    def get_index(self, word):
         if word in self.dict_:
             return self.dict_[word]
         else:
@@ -34,8 +34,8 @@ class ChineseDict:
 def main():
     dict_dir = "/Users/msj/Code/font/font/static/chinese.dict"
     d = ChineseDict(dict_dir)
-    print(d.getWord(6738))
-    print(d.getIndex('\xe8\xb2\xac'))
+    print(d.get_word(6738))
+    print(d.get_index('\xe8\xb2\xac'))
 
 
 if __name__ == '__main__':

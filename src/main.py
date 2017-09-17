@@ -27,6 +27,7 @@ def model_evaluate(sess, model, datas, labels):
 
     return total_loss / step_size, total_accuracy / step_size
 
+
 def build_graph(sess, saver, path):
     ckpt = tf.train.get_checkpoint_state(path)
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
@@ -63,7 +64,7 @@ def train():
         model = FontModel(FLAGS.batch_size, FLAGS.image_size, FLAGS.image_channel, train_data_gallery.label_size(),
                           FLAGS.starter_learning_rate, FLAGS.decay_steps, FLAGS.decay_rate, device)
 
-        saver = tf.train.Saver(max_to_keep = 2)
+        saver = tf.train.Saver(max_to_keep=2)
         with tf.Session(config=config) as sess:
             build_graph(sess, saver, FLAGS.checkpoint_dir)
 
@@ -146,19 +147,18 @@ def inference():
                 _, temp_accuracy, _, temp_prediction = model.step(sess, temp_data, temp_label, 1.0, True)
                 total_accuracy += temp_accuracy
                 is_match = (np.argmax(temp_label) == np.argmax(temp_prediction))
-                _, sub_dir = os.path.split(os.path.split(temp_path[0])[0])
-                if is_match:
-                    abs_dir = os.path.join(FLAGS.right_dir, sub_dir)
-                    if os.path.isdir(abs_dir) == False:
-                        os.mkdir(abs_dir)
-                    shutil.copy(temp_path[0], abs_dir)
-                else:
-                    abs_dir = os.path.join(FLAGS.wrong_dir, sub_dir)
-                    if os.path.isdir(abs_dir) == False:
-                        os.mkdir(abs_dir)
-                    shutil.copy(temp_path[0], abs_dir)
-                    shutil.copy(temp_path[0], abs_dir)
-            print("Total accuracy: %02.2f" % (total_accuracy / step_size))
+                word_dir, word_name = os.path.split(temp_path[0])
+                _, font_name = os.path.split(word_dir)
+
+                dst_dir = os.path.join(FLAGS.right_dir if is_match else FLAGS.wrong_dir, font_name)
+                if os.path.isdir(dst_dir) == False:
+                    os.mkdir(dst_dir)
+                shutil.copy(temp_path[0], dst_dir)
+                if is_match == False:
+                    os.rename(os.path.join(dst_dir, font_name),
+                              os.path.join(dst_dir, '(' + data_gallery.get_word(temp_prediction[0]) + ')' + font_name))
+
+            print("Total accuracy: %02.2f %%" % (total_accuracy / step_size * 100))
 
 
 if __name__ == '__main__':

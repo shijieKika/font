@@ -47,6 +47,9 @@ class ImageGallery:
     def shuffle(self):
         random.shuffle(self.font_path_list)
 
+    def get_word(self, id):
+        return self.chinese.get_word(id)
+
     def get_batch(self, start, end):
         start = start if start != None else 0
         end = end if end != None else len(self.font_path_list)
@@ -81,7 +84,7 @@ class ImageGallery:
                 image_array = self.convert_raw_to_array(font_file_path, True)
                 chinese_word = re_chinese.findall(font_file_path)[0]
                 label = np.zeros(self.chinese.size())
-                label[self.chinese.getIndex(chinese_word)] = 1
+                label[self.chinese.get_index(chinese_word)] = 1
 
                 self.path_image_map[font_file_path] = (image_array, label)
                 font_list.append(image_array)
