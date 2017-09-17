@@ -29,6 +29,9 @@ def model_evaluate(sess, model, datas, labels):
 
 
 def build_graph(sess, saver, path):
+    if path is None:
+        print("Created model with fresh patameters")
+        sess.run(tf.global_variables_initializer())
     ckpt = tf.train.get_checkpoint_state(path)
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
         print("Reading model parameters from %s" % ckpt.model_checkpoint_path)
@@ -119,11 +122,11 @@ def test():
     print('To test in future')
 
 
-def inference():
+def infer():
     graph = tf.Graph()
     with graph.as_default():
         print("Init")
-        device = '/gpu:0' if FLAGS.gpu else '/cpu:0'
+        device = ('/gpu:' if FLAGS.gpu else '/cpu:') + str(FLAGS.device)
         config = tf.ConfigProto()
         config.gpu_options.per_process_gpu_memory_fraction = FLAGS.gpu_fraction if FLAGS.gpu else 0.01
 
@@ -165,40 +168,50 @@ def inference():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--gpu", action='store_true')
-    parser.add_argument("--train", action='store_true')
+    # phase
+    parser.add_argument("--training", action='store_true')
     parser.add_argument("--inference", action='store_true')
 
+    # device using
+    parser.add_argument("--gpu", action='store_true')
+    parser.add_argument("--device", type=int, default=0)
+    parser.add_argument("--gpu_fraction", type=float, default=0.50)
+
+    # input
     parser.add_argument("--data_dir", help="Need data dir")
     parser.add_argument("--chinese_dict_dir", help="Need chinese dict dir")
-    parser.add_argument("--checkpoint_dir", help="Need checkpoint dir", default=None)
 
-    # for train
+    # checkpoint
+    parser.add_argument("--checkpoint_dir", default=None)
+    parser.add_argument("--steps_per_checkpoint", type=int, default=100)
+
+    # for training
     parser.add_argument("--valid_positive_dir", help="Need positive valid dir", default=None)
     parser.add_argument("--valid_negative_dir", help="Need negative valid dir", default=None)
 
-    # for inference
-    parser.add_argument("--right_dir", help="Need right dir", default=None)
-    parser.add_argument("--wrong_dir", help="Need wrong dir", default=None)
-
-    parser.add_argument("--batch_size", type=int, default=128)
+    # training parameters
     parser.add_argument("--epoch_size", type=int, default=25)
-    parser.add_argument("--steps_per_checkpoint", type=int, default=100)
+    parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--dropout_prob", type=float, default=0.5)
 
-    # const
-    parser.add_argument("--image_size", type=int, default=64)
-    parser.add_argument("--image_channel", type=int, default=1)
-    parser.add_argument("--image_edge", type=int, default=2)
-    parser.add_argument("--gpu_fraction", type=float, default=0.50)
+    # learning rate decay
     parser.add_argument("--starter_learning_rate", type=float, default=0.002)
     parser.add_argument("--decay_steps", type=float, default=500)
     parser.add_argument("--decay_rate", type=float, default=0.96)
 
+    # for inference, to store the result separately
+    parser.add_argument("--right_dir", default=None)
+    parser.add_argument("--wrong_dir", default=None)
+
+    # image
+    parser.add_argument("--image_size", type=int, default=64)
+    parser.add_argument("--image_channel", type=int, default=1)
+    parser.add_argument("--image_edge", type=int, default=2)
+
     FLAGS = parser.parse_args()
-    if FLAGS.train:
+    if FLAGS.training:
         train()
     elif FLAGS.inference:
-        inference()
+        infer()
     else:
         test()

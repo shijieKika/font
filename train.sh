@@ -1,6 +1,6 @@
 #!/bin/bash
 
-nohup python2 -u src/main.py --gpu --train \
+nohup python2 -u src/main.py --gpu --training \
                                    --data_dir "/mnt/mashijie/data/train_positive" \
                                    --valid_positive_dir "/mnt/mashijie/data/valid_positive" \
                                    --valid_negative_dir "/mnt/data/training_data/negative_data" \
