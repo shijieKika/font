@@ -172,11 +172,9 @@ class FontModel:
                 self.accuracy = tf.reduce_mean(
                     tf.cast(tf.equal(tf.argmax(self.input_label, 1), tf.argmax(logits, 1)), 'float32'))
 
-            with tf.name_scope('learning_rate'):
+            with tf.name_scope('adam_optimizer'):
                 self.learning_rate = tf.train.exponential_decay(starter_learning_rate, self.global_step,
                                                                 decay_steps, decay_rate, staircase=True)
-
-            with tf.name_scope('adam_optimizer'):
                 update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
                 with tf.control_dependencies(update_ops):
                     self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss,
