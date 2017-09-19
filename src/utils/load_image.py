@@ -19,8 +19,6 @@ class ImageGallery:
         self.image_size = image_size
         self.image_channel = image_channel
         self.inner_size = image_size - 2 * image_edge
-        self.lr = np.repeat(255, self.inner_size * image_edge).reshape(self.inner_size, image_edge)
-        self.ud = np.repeat(255, image_edge * image_size).reshape(image_edge, image_size)
         self.bin_process = bin_process
         self.add_data(src_path)
 
@@ -92,45 +90,37 @@ class ImageGallery:
 
         return batch_path, np.array(font_list, dtype=np.float32), np.array(label_list, dtype=np.float32)
 
-    def convert_raw_to_array(self, file_path, bin_pro):
-        raw_photo = np.array(Image.open(file_path))
-        x, y = raw_photo.shape
-        if x < y:
-            head_count = (y - x) / 2
-            head_matrix = np.repeat(255, head_count * y).reshape((head_count, y))
-            tail_matrix = np.repeat(255, (y - x - head_count) * y).reshape(y - x - head_count, y)
-            full_photo = np.concatenate((head_matrix, raw_photo, tail_matrix), axis=0)
-        elif x > y:
-            head_count = (x - y) / 2
-            head_matrix = np.repeat(255, x * head_count).reshape(x, head_count)
-            tail_matrix = np.repeat(255, x * (x - y - head_count)).reshape(x, x - y - head_count)
-            full_photo = np.concatenate((head_matrix, raw_photo, tail_matrix), axis=1)
-        else:
-            full_photo = raw_photo
+    def convert_raw_to_array(self, image_dir, bin_pro):
+        '''
+        :param image_dir: the dir of font.png
+        :param bin_pro: whether to binaryzation process
+        :return: ndarray of the font.png
+        '''
+        raw_image = np.array(Image.open(image_dir))
+        x, y = raw_image.shape
+        pad_width = [[(y - x) / 2, (y - x) / 2], [0, 0]] if x < y else [[0, 0], [(x - y) / 2, (x - y) / 2]]
+        squared_image = np.lib.pad(raw_image, pad_width, 'constant', constant_values=255)
 
-        result = np.array(Image.fromarray(np.uint8(full_photo)).resize((self.inner_size, self.inner_size)))
+        scaled_image = np.array(Image.fromarray(np.uint8(squared_image)).resize((self.inner_size, self.inner_size)))
 
-        result = np.concatenate((self.lr, result), axis=1)
-        result = np.concatenate((result, self.lr), axis=1)
-        result = np.concatenate((self.ud, result), axis=0)
-        result = np.concatenate((result, self.ud), axis=0)
+        surrounded_image = np.lib.pad(scaled_image, 2, 'constant', constant_values=255)
 
-        if self.bin_process:
-            for i in range(self.image_size):
-                for j in range(self.image_size):
-                    result[i, j] = 0 if result[i, j] > 127 else 1
+        image = (surrounded_image < 127).astype(int) if self.bin_process else surrounded_image
 
-        return result.reshape((self.image_size, self.image_size, self.image_channel))
+        return image.reshape((self.image_size, self.image_size, self.image_channel))
 
 
 def main():
-    a = ImageGallery('/Users/msj/Code/font/font/static/chinese.dict', 64, 1, 2, bin_process=False)
-    a.add_data("/Users/msj/Code/font/data/debug_data/positive_train", 1.0)
-    for i in range(0, 1):
-        im, la, pn = a.get_batch(i * 16, (i + 1) * 16)
-        print(im.shape, la.shape, pn.shape)
-        print(pn)
-        Image.fromarray(np.uint8(im[i].reshape((64, 64)))).show()
+    import time
+    a = ImageGallery("/Users/msj/Code/font/data/debug_data/positive_train",
+                     '/Users/msj/Code/font/font/static/chinese.dict', 64, 1, 2, bin_process=False)
+    start = time.time()
+    for i in range(1):
+        dir, im, la = a.get_batch(i, i + 1)
+        print(dir[0])
+        print(im.shape, la.shape)
+        Image.fromarray(np.uint8(im[0].reshape((64, 64)))).show()
+    print(time.time() - start)
 
 
 if __name__ == '__main__':

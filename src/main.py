@@ -21,7 +21,7 @@ def model_evaluate(sess, model, datas, labels):
     for end in range(model.batch_size, data_count + 1, model.batch_size):
         batch_data = datas[end - model.batch_size:end]
         batch_label = labels[end - model.batch_size:end]
-        batch_loss, batch_accuracy, _, _ = model.step(sess, batch_data, batch_label, 1.0, True)
+        _, batch_loss, batch_accuracy, _, _ = model.step(sess, batch_data, batch_label, 1.0, True)
         total_loss += batch_loss
         total_accuracy += batch_accuracy
 
@@ -76,9 +76,12 @@ def train():
             print("\tvalid_positive_dir: %s, size %d" % (FLAGS.valid_positive_dir, valid_positive_gallery.size()))
             print("\tvalid_negative_dir: %s, size %d" % (FLAGS.valid_negative_dir, valid_negative_gallery.size()))
             print("\tcheckpoint_dir: %s, steps_per_checkpoint: %d" % (FLAGS.checkpoint_dir, FLAGS.steps_per_checkpoint))
+            print("\tsummary_dir: %s" % FLAGS.summary_dir)
             print("\tstarter_learning_rate: %.6f, decay_steps: %d, decay_rate: %.6f" % (
                 FLAGS.starter_learning_rate, FLAGS.decay_steps, FLAGS.decay_rate))
 
+            if FLAGS.summary_dir is not None:
+                train_writer = tf.summary.FileWriter(FLAGS.summary_dir, sess.graph)
             step_size = train_data_gallery.size() / batch_size
             for epoch_step in range(FLAGS.epoch_size):
                 train_data_gallery.shuffle()
@@ -95,8 +98,10 @@ def train():
 
                         _, batch_data, batch_label = train_data_gallery.get_batch((step + 1) * batch_size,
                                                                                   (step + 2) * batch_size)
-                        batch_loss, batch_accuracy, batch_rate, _ = model.step(sess, batch_data,
-                                                                               batch_label, 1.0, True)
+                        train_summary, batch_loss, batch_accuracy, batch_rate, _ = model.step(sess, batch_data,
+                                                                                              batch_label, 1.0, True)
+                        if FLAGS.summary_dir is not None:
+                            train_writer.add_summary(train_summary, global_step)
 
                         message = '%s, Step %d, MiniBatch loss: %.6f, MiniBatch positive accuracy: %02.2f %%, MiniBatch learning rate: %.6f' % (
                             time.strftime('%X %x %Z'), global_step, batch_loss, 100 * batch_accuracy, batch_rate)
@@ -147,7 +152,7 @@ def infer():
             total_accuracy = 0.0
             for step in range(step_size):
                 temp_path, temp_data, temp_label = data_gallery.get_batch(step, step + batch_size)
-                _, temp_accuracy, _, temp_prediction = model.step(sess, temp_data, temp_label, 1.0, True)
+                _, _, temp_accuracy, _, temp_prediction = model.step(sess, temp_data, temp_label, 1.0, True)
                 total_accuracy += temp_accuracy
                 is_match = (np.argmax(temp_label) == np.argmax(temp_prediction))
                 word_dir, word_name = os.path.split(temp_path[0])
@@ -184,6 +189,7 @@ if __name__ == '__main__':
     # checkpoint
     parser.add_argument("--checkpoint_dir", default=None)
     parser.add_argument("--steps_per_checkpoint", type=int, default=100)
+    parser.add_argument("--summary_dir", default=None)
 
     # for training
     parser.add_argument("--valid_positive_dir", help="Need positive valid dir", default=None)
