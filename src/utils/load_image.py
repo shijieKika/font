@@ -11,6 +11,30 @@ re_file_name = re.compile(r"uni.+png")
 re_chinese = re.compile(r"uni.*_(.*)\.png")
 
 
+def convert_raw_to_array(image_dir, image_size, image_channel, image_edge, bin_process):
+    '''
+    :param image_dir: the dir of font.png
+    :param image_size: the size of the result
+    :param image_channel: the size of the result's channel
+    :param image_edge: the size of the result's edge
+    :param bin_process: whether to binarize
+    :return:
+    '''
+    inner_size = image_size - 2 * image_edge
+    raw_image = np.array(Image.open(image_dir))
+    x, y = raw_image.shape
+    pad_width = [[(y - x) / 2, (y - x) / 2], [0, 0]] if x < y else [[0, 0], [(x - y) / 2, (x - y) / 2]]
+    squared_image = np.lib.pad(raw_image, pad_width, 'constant', constant_values=255)
+
+    scaled_image = np.array(Image.fromarray(np.uint8(squared_image)).resize((inner_size, inner_size)))
+
+    surrounded_image = np.lib.pad(scaled_image, image_edge, 'constant', constant_values=255)
+
+    image = (surrounded_image < 127).astype(int) if bin_process else surrounded_image
+
+    return image.reshape((image_size, image_size, image_channel))
+
+
 class ImageGallery:
     def __init__(self, src_path, chinese_path, image_size, image_channel, image_edge, bin_process=True):
         self.chinese = ChineseDict(chinese_path)
@@ -18,7 +42,7 @@ class ImageGallery:
         self.path_image_map = {}
         self.image_size = image_size
         self.image_channel = image_channel
-        self.inner_size = image_size - 2 * image_edge
+        self.image_edge = image_edge
         self.bin_process = bin_process
         self.add_data(src_path)
 
@@ -79,7 +103,8 @@ class ImageGallery:
                 font_list.append(self.path_image_map[font_file_path][0])
                 label_list.append(self.path_image_map[font_file_path][1])
             else:
-                image_array = self.convert_raw_to_array(font_file_path, True)
+                image_array = convert_raw_to_array(font_file_path, self.image_size, self.image_channel, self.image_edge,
+                                                   self.bin_process)
                 chinese_word = re_chinese.findall(font_file_path)[0]
                 label = np.zeros(self.chinese.size())
                 label[self.chinese.get_index(chinese_word)] = 1
@@ -89,25 +114,6 @@ class ImageGallery:
                 label_list.append(label)
 
         return batch_path, np.array(font_list, dtype=np.float32), np.array(label_list, dtype=np.float32)
-
-    def convert_raw_to_array(self, image_dir, bin_pro):
-        '''
-        :param image_dir: the dir of font.png
-        :param bin_pro: whether to binaryzation process
-        :return: ndarray of the font.png
-        '''
-        raw_image = np.array(Image.open(image_dir))
-        x, y = raw_image.shape
-        pad_width = [[(y - x) / 2, (y - x) / 2], [0, 0]] if x < y else [[0, 0], [(x - y) / 2, (x - y) / 2]]
-        squared_image = np.lib.pad(raw_image, pad_width, 'constant', constant_values=255)
-
-        scaled_image = np.array(Image.fromarray(np.uint8(squared_image)).resize((self.inner_size, self.inner_size)))
-
-        surrounded_image = np.lib.pad(scaled_image, 2, 'constant', constant_values=255)
-
-        image = (surrounded_image < 127).astype(int) if self.bin_process else surrounded_image
-
-        return image.reshape((self.image_size, self.image_size, self.image_channel))
 
 
 def main():
