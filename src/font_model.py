@@ -180,10 +180,10 @@ class FontModel:
                     self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss,
                                                                                                        global_step=self.global_step)
 
-            tf.summary.scalar('loss', self.loss)
-            tf.summary.scalar('accuracy', self.accuracy)
-            tf.summary.scalar('learning_rate', self.learning_rate)
-            self.merged = tf.summary.merge_all()
+        tf.summary.scalar('loss', self.loss)
+        tf.summary.scalar('accuracy', self.accuracy)
+        tf.summary.scalar('learning_rate', self.learning_rate)
+        self.merged = tf.summary.merge_all()
 
     def step(self, sess, batch_data, batch_label, dropout_prob, only_forward):
         input_feed = {}
