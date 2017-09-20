@@ -44,7 +44,8 @@ class ImageGallery:
         self.image_channel = image_channel
         self.image_edge = image_edge
         self.bin_process = bin_process
-        self.add_data(src_path)
+        if src_path is not None:
+            self.add_data(src_path)
 
     def add_data(self, src_path):
         count = 0
@@ -77,10 +78,10 @@ class ImageGallery:
         end = end if end != None else len(self.font_path_list)
         if start > end:
             print("start > end")
-            return None, None
+            return None, None, None
         if len(self.font_path_list) == 0:
             print("Num of font files is 0")
-            return None, None
+            return None, None, None
 
         start_id = start % len(self.font_path_list)
         start_epoch = start / len(self.font_path_list)

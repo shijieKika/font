@@ -107,18 +107,21 @@ def train():
                             time.strftime('%X %x %Z'), global_step, batch_loss, 100 * batch_accuracy, batch_rate)
                         print(message)
 
-                valid_positive_gallery.shuffle()
-                valid_negative_gallery.shuffle()
-                _, valid_datas, valid_labels = valid_positive_gallery.get_batch(None, None)
-                _, valid_negative_datas, valid_negative_labels = valid_negative_gallery.get_batch(None, None)
+                if valid_positive_gallery.size() != 0 and valid_negative_gallery.size() != 0:
+                    valid_positive_gallery.shuffle()
+                    valid_negative_gallery.shuffle()
+                    _, valid_datas, valid_labels = valid_positive_gallery.get_batch(None, None)
+                    _, valid_negative_datas, valid_negative_labels = valid_negative_gallery.get_batch(None, None)
 
-                positive_valid_loss, positive_valid_accuracy = model_evaluate(sess, model, valid_datas, valid_labels)
-                _, negative_valid_accuracy = model_evaluate(sess, model, valid_negative_datas, valid_negative_labels)
+                    positive_valid_loss, positive_valid_accuracy = model_evaluate(sess, model, valid_datas,
+                                                                                  valid_labels)
+                    _, negative_valid_accuracy = model_evaluate(sess, model, valid_negative_datas,
+                                                                valid_negative_labels)
 
-                message = '%s, Epoch %d, Validation positive loss %.6f, accuracy %02.2f %%, negative accuracy %02.2f %%' % (
-                    time.strftime('%X %x %Z'), epoch_step + 1, positive_valid_loss, 100 * positive_valid_accuracy,
-                    100 - 100 * negative_valid_accuracy)
-                print(message)
+                    message = '%s, Epoch %d, Validation positive loss %.6f, accuracy %02.2f %%, negative accuracy %02.2f %%' % (
+                        time.strftime('%X %x %Z'), epoch_step + 1, positive_valid_loss, 100 * positive_valid_accuracy,
+                        100 - 100 * negative_valid_accuracy)
+                    print(message)
 
 
 def test():
@@ -192,8 +195,8 @@ if __name__ == '__main__':
     parser.add_argument("--summary_dir", default=None)
 
     # for training
-    parser.add_argument("--valid_positive_dir", help="Need positive valid dir", default=None)
-    parser.add_argument("--valid_negative_dir", help="Need negative valid dir", default=None)
+    parser.add_argument("--valid_positive_dir", default=None)
+    parser.add_argument("--valid_negative_dir", default=None)
 
     # training parameters
     parser.add_argument("--epoch_size", type=int, default=25)
